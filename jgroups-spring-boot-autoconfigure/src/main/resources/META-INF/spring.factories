@@ -1,2 +1,3 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+  org.axonframework.extensions.jgroups.autoconfig.RoutingStrategyAutoConfiguration,\
   org.axonframework.extensions.jgroups.autoconfig.JGroupsAutoConfiguration

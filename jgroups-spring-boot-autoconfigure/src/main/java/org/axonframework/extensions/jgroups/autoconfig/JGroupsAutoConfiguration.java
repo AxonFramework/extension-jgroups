@@ -38,15 +38,16 @@ import org.axonframework.commandhandling.distributed.CommandRouter;
 import org.axonframework.commandhandling.distributed.ConsistentHashChangeListener;
 import org.axonframework.commandhandling.distributed.DistributedCommandBus;
 import org.axonframework.commandhandling.distributed.RoutingStrategy;
+import org.axonframework.extensions.jgroups.DistributedCommandBusProperties;
 import org.axonframework.extensions.jgroups.commandhandling.JGroupsConnectorFactoryBean;
 import org.axonframework.serialization.Serializer;
-import org.axonframework.extensions.jgroups.DistributedCommandBusProperties;
 import org.axonframework.springboot.autoconfig.InfraConfiguration;
 import org.jgroups.stack.GossipRouter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -61,10 +62,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Configuration
+@AutoConfigureAfter(RoutingStrategyAutoConfiguration.class)
 @AutoConfigureBefore(InfraConfiguration.class)
 @EnableConfigurationProperties(DistributedCommandBusProperties.class)
 @ConditionalOnProperty("axon.distributed.enabled")
-@ConditionalOnClass(name = {"org.axonframework.extensions.jgroups.commandhandling.JGroupsConnector", "org.jgroups.JChannel" })
+@ConditionalOnClass(name = {
+        "org.axonframework.extensions.jgroups.commandhandling.JGroupsConnector",
+        "org.jgroups.JChannel"
+})
 public class JGroupsAutoConfiguration {
 
     private static final Logger logger = LoggerFactory.getLogger(JGroupsAutoConfiguration.class);
@@ -95,10 +100,11 @@ public class JGroupsAutoConfiguration {
 
     @ConditionalOnMissingBean({CommandRouter.class, CommandBusConnector.class})
     @Bean
-    public JGroupsConnectorFactoryBean jgroupsConnectorFactoryBean(@Qualifier("messageSerializer") Serializer messageSerializer,
-                                                                   @Qualifier("localSegment") CommandBus localSegment,
-                                                                   RoutingStrategy routingStrategy,
-                                                                   @Autowired(required = false) ConsistentHashChangeListener consistentHashChangeListener) {
+    public JGroupsConnectorFactoryBean jgroupsConnectorFactoryBean(
+            @Qualifier("messageSerializer") Serializer messageSerializer,
+            @Qualifier("localSegment") CommandBus localSegment,
+            RoutingStrategy routingStrategy,
+            @Autowired(required = false) ConsistentHashChangeListener consistentHashChangeListener) {
         System.setProperty("jgroups.tunnel.gossip_router_hosts", properties.getJgroups().getGossip().getHosts());
         System.setProperty("jgroups.bind_addr", String.valueOf(properties.getJgroups().getBindAddr()));
         System.setProperty("jgroups.bind_port", String.valueOf(properties.getJgroups().getBindPort()));
