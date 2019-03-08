@@ -16,17 +16,13 @@
 
 package org.axonframework.extensions.jgroups.commandhandling;
 
-import org.axonframework.commandhandling.CommandBus;
-import org.axonframework.commandhandling.CommandCallback;
-import org.axonframework.commandhandling.CommandMessage;
-import org.axonframework.commandhandling.CommandResultMessage;
-import org.axonframework.commandhandling.GenericCommandMessage;
-import org.axonframework.commandhandling.SimpleCommandBus;
+import org.axonframework.commandhandling.*;
 import org.axonframework.commandhandling.callbacks.FutureCallback;
 import org.axonframework.commandhandling.distributed.AnnotationRoutingStrategy;
 import org.axonframework.commandhandling.distributed.DistributedCommandBus;
 import org.axonframework.commandhandling.distributed.RoutingStrategy;
 import org.axonframework.commandhandling.distributed.UnresolvedRoutingKeyPolicy;
+import org.axonframework.commandhandling.distributed.commandfilter.CommandNameFilter;
 import org.axonframework.commandhandling.distributed.commandfilter.DenyAll;
 import org.axonframework.extensions.jgroups.commandhandling.utils.MockException;
 import org.axonframework.messaging.GenericMessage;
@@ -38,7 +34,9 @@ import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.stack.IpAddress;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -67,6 +65,18 @@ public class JGroupsConnectorTest {
     private Serializer serializer;
     private String clusterName;
     private RoutingStrategy routingStrategy;
+
+    private static void closeSilently(JChannel channel) {
+        try {
+            channel.close();
+        } catch (Exception e) {
+            // ignore
+        }
+    }
+
+    private static JChannel createChannel() throws Exception {
+        return new JChannel("org/axonframework/extensions/jgroups/commandhandling/tcp_static.xml");
+    }
 
     @Before
     public void setUp() throws Exception {
@@ -185,6 +195,28 @@ public class JGroupsConnectorTest {
     public void testRingsProperlySynchronized_ChannelAlreadyConnectedToOtherCluster() throws Exception {
         channel1.connect("other");
         connector1.connect();
+    }
+
+    @Test
+    public void testMessagesReceivedPromptlyAfterConnectingDoesntCauseException() throws Exception {
+        channel2.connect(clusterName);
+        channel1 = spy(channel1);
+        connector1 = JGroupsConnector.builder()
+                                     .localSegment(mockCommandBus1)
+                                     .channel(channel1)
+                                     .clusterName(clusterName)
+                                     .serializer(serializer)
+                                     .routingStrategy(routingStrategy)
+                                     .build();
+
+        doAnswer(i -> {
+            connector1.receive(new Message(null, new JoinMessage(100, new CommandNameFilter("test"), 0, false)).setSrc(channel2.address()));
+            return i.callRealMethod();
+                 }
+        ).when(channel1).connect(any());
+        connector1.connect();
+
+        verify(channel1).connect(any());
     }
 
     @Test(timeout = 30000)
@@ -467,18 +499,6 @@ public class JGroupsConnectorTest {
         assertEquals(numberOfDispatchedAndWaitedForCommands, futureCallback.getResult().getPayload());
         verify(mockCommandBus1, times(50)).dispatch(any(CommandMessage.class), isA(CommandCallback.class));
         verify(mockCommandBus2, times(50)).dispatch(any(CommandMessage.class), isA(CommandCallback.class));
-    }
-
-    private static void closeSilently(JChannel channel) {
-        try {
-            channel.close();
-        } catch (Exception e) {
-            // ignore
-        }
-    }
-
-    private static JChannel createChannel() throws Exception {
-        return new JChannel("org/axonframework/extensions/jgroups/commandhandling/tcp_static.xml");
     }
 
     private static class CountingCommandHandler implements MessageHandler<CommandMessage<?>> {

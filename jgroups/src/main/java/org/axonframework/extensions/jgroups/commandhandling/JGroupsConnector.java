@@ -175,6 +175,11 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
         if (channel.getClusterName() != null && !clusterName.equals(channel.getClusterName())) {
             throw new ConnectionFailedException("Already joined cluster: " + channel.getClusterName());
         }
+
+        if (!executorProvided) {
+            executorService = Executors.newCachedThreadPool(new AxonThreadFactory("JGroupsConnector(" + clusterName + ")"));
+        }
+
         channel.setReceiver(this);
         channel.connect(clusterName);
 
@@ -183,9 +188,6 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
         SimpleMember<Address> localMember = new SimpleMember<>(localName, localAddress, LOCAL_MEMBER, null);
         members.put(localAddress, new VersionedMember(localMember, membershipVersion.getAndIncrement()));
         updateConsistentHash(ch -> ch.with(localMember, loadFactor, commandFilter));
-        if (!executorProvided) {
-            executorService = Executors.newCachedThreadPool(new AxonThreadFactory("JGroupsConnector - " + localName));
-        }
     }
 
     /**
@@ -332,7 +334,8 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
 
     private void processJoinMessage(final Message message, final JoinMessage joinMessage) {
         String joinedMember = message.getSrc().toString();
-        if (channel.getView().containsMember(message.getSrc())) {
+        View currentView = channel.getView();
+        if (currentView != null && currentView.containsMember(message.getSrc())) {
             int loadFactor = joinMessage.getLoadFactor();
             CommandMessageFilter commandFilter = joinMessage.messageFilter();
             SimpleMember<Address> member = new SimpleMember<>(joinedMember, message.getSrc(), NON_LOCAL_MEMBER, s -> {
@@ -367,7 +370,7 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
                 logger.debug("Got a network of members: {}", members.values());
             }
         } else {
-            logger.warn("Received join message from '{}', but a connection with the sender has been lost.",
+            logger.warn("Received join message from '{}', but it's not in my current view of the cluster.",
                         message.getSrc().toString());
         }
     }
