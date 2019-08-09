@@ -577,11 +577,11 @@ public class JGroupsConnectorTest {
             return null;
         }
 
-        void awaitStarted() throws InterruptedException {
+        private void awaitStarted() throws InterruptedException {
             startedLatch.await(30, TimeUnit.SECONDS);
         }
 
-        void finish() {
+        private void finish() {
             finishLatch.countDown();
         }
     }
