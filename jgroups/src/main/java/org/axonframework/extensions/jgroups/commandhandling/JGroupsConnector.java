@@ -246,7 +246,10 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
                 }
                 return ch.without(member);
             }));
-            stream(left).forEach(members::remove);
+            stream(left).forEach(key -> {
+                members.remove(key);
+                callbackRepository.cancelCallbacks(key);
+            });
             stream(joined).filter(member -> !member.equals(localAddress))
                           .forEach(member -> sendMyConfigurationTo(member, true, membershipVersion.get()));
         }
@@ -449,7 +452,12 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
     public <C, R> void send(Member destination,
                             CommandMessage<C> command,
                             CommandCallback<? super C, R> callback) throws Exception {
-        callbackRepository.store(command.getIdentifier(), new CommandCallbackWrapper<>(destination, command, callback));
+        callbackRepository.store(
+                command.getIdentifier(),
+                new CommandCallbackWrapper<>(
+                        destination.getConnectionEndpoint(Address.class).orElse(channel.address()),
+                        command,
+                        callback));
         channel.send(resolveAddress(destination), new JGroupsDispatchMessage(command, serializer, true));
     }
 
