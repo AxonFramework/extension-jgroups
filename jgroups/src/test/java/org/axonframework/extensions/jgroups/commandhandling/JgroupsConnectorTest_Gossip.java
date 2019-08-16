@@ -16,9 +16,8 @@
 
 package org.axonframework.extensions.jgroups.commandhandling;
 
-import org.axonframework.commandhandling.CommandBus;
-import org.axonframework.commandhandling.CommandMessage;
-import org.axonframework.commandhandling.SimpleCommandBus;
+import org.axonframework.commandhandling.*;
+import org.axonframework.commandhandling.callbacks.FutureCallback;
 import org.axonframework.commandhandling.distributed.AnnotationRoutingStrategy;
 import org.axonframework.commandhandling.distributed.DistributedCommandBus;
 import org.axonframework.commandhandling.distributed.RoutingStrategy;
@@ -26,14 +25,18 @@ import org.axonframework.commandhandling.distributed.UnresolvedRoutingKeyPolicy;
 import org.axonframework.commandhandling.distributed.commandfilter.AcceptAll;
 import org.axonframework.commandhandling.gateway.CommandGateway;
 import org.axonframework.commandhandling.gateway.DefaultCommandGateway;
+import org.axonframework.messaging.GenericMessage;
+import org.axonframework.messaging.HandlerExecutionException;
 import org.axonframework.messaging.MessageHandler;
 import org.axonframework.messaging.RemoteHandlingException;
 import org.axonframework.serialization.SerializedObject;
 import org.axonframework.serialization.xml.XStreamSerializer;
 import org.jgroups.JChannel;
 import org.jgroups.stack.GossipRouter;
-import org.junit.*;
-import org.mockito.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.ArgumentMatcher;
 
 import java.nio.charset.Charset;
 import java.util.Arrays;
@@ -98,7 +101,7 @@ public class JgroupsConnectorTest_Gossip {
         }
     }
 
-    @Test
+    @Test(timeout = 75000)
     public void testConnectorRecoversWhenGossipRouterReconnects() throws Exception {
 
         connector1.updateMembership(20, AcceptAll.INSTANCE);
@@ -108,12 +111,12 @@ public class JgroupsConnectorTest_Gossip {
         connector2.updateMembership(80, AcceptAll.INSTANCE);
         connector2.connect();
 
-        assertTrue("Connector 2 failed to connect", connector2.awaitJoined());
+        assertTrue("Expected connector 2 to connect within 10 seconds", connector2.awaitJoined(10, TimeUnit.SECONDS));
 
-        // the nodes joined, but didn't detect eachother
+        // the nodes joined, but can't detect each other yet
         gossipRouter.start();
 
-        // now, they should detect eachother and start syncing their state
+        // now, they should detect each other and start syncing their state
         long deadline = System.currentTimeMillis() + 60000;
         while (!connector1.getConsistentHash().equals(connector2.getConsistentHash())) {
             // don't have a member for String yet, which means we must wait a little longer
@@ -123,6 +126,35 @@ public class JgroupsConnectorTest_Gossip {
             }
             Thread.sleep(100);
         }
+    }
+
+    @Test(timeout = 30000)
+    public void testCustomResponseIncludedInReply() throws Exception {
+        gossipRouter.start();
+
+        DistributedCommandBus bus1 = DistributedCommandBus.builder()
+                                                          .commandRouter(connector1)
+                                                          .connector(connector1)
+                                                          .build();
+        DistributedCommandBus bus2 = DistributedCommandBus.builder()
+                                                          .commandRouter(connector2)
+                                                          .connector(connector2)
+                                                          .build();
+
+        bus2.subscribe("test", m -> {
+            throw new CommandExecutionException("Generic message", new RuntimeException(), m.getPayload());
+        });
+        connector2.connect();
+        connector1.connect();
+        waitForConnectorSync();
+
+        FutureCallback<String, Object> callback = new FutureCallback<>();
+        bus1.dispatch(new GenericCommandMessage<>(new GenericMessage<>("hello world"), "test"), callback);
+
+        CommandResultMessage<?> actual = callback.join();
+        assertTrue(actual.isExceptional());
+        assertTrue(actual.exceptionResult() instanceof HandlerExecutionException);
+        assertEquals("hello world", actual.exceptionDetails().orElse(null) );
     }
 
     @Test(timeout = 30000)
