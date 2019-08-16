@@ -19,6 +19,7 @@ package org.axonframework.extensions.jgroups.commandhandling;
 import org.axonframework.commandhandling.*;
 import org.axonframework.commandhandling.callbacks.FutureCallback;
 import org.axonframework.commandhandling.distributed.AnnotationRoutingStrategy;
+import org.axonframework.commandhandling.distributed.CommandBusConnectorCommunicationException;
 import org.axonframework.commandhandling.distributed.DistributedCommandBus;
 import org.axonframework.commandhandling.distributed.RoutingStrategy;
 import org.axonframework.commandhandling.distributed.UnresolvedRoutingKeyPolicy;
@@ -42,7 +43,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
@@ -357,6 +361,47 @@ public class JGroupsConnectorTest {
     }
 
     @Test
+    public void testDisconnectInvokesCallbacks() throws Throwable {
+        BlockingCommandHandler handler1 = new BlockingCommandHandler();
+        BlockingCommandHandler handler2 = new BlockingCommandHandler();
+
+        distributedCommandBus1.subscribe(String.class.getName(), handler1);
+        distributedCommandBus1.updateLoadFactor(1);
+        connector1.connect();
+        assertTrue("Expected connector 1 to connect within 10 seconds", connector1.awaitJoined(10, TimeUnit.SECONDS));
+
+        distributedCommandBus2.subscribe(String.class.getName(), handler2);
+        distributedCommandBus2.updateLoadFactor(0);
+        connector2.connect();
+        assertTrue("Connector 2 failed to connect", connector2.awaitJoined());
+
+        // wait for both connectors to have the same view
+        waitForConnectorSync();
+
+        FutureCallback<Object, Object> callback = new FutureCallback<>();
+
+        distributedCommandBus2.dispatch(new GenericCommandMessage<>("message"), callback);
+        handler1.awaitStarted();
+
+        connector1.disconnect();
+
+        try {
+            callback.get(10, TimeUnit.SECONDS);
+            fail("Expected to get callback with exception");
+        } catch (TimeoutException e) {
+            fail("Callback wasn't called after peer disconnected");
+        } catch (ExecutionException e) {
+            // We expect CommandBusConnectorCommunicationException
+            if (!(e.getCause() instanceof CommandBusConnectorCommunicationException)) {
+                throw e.getCause();
+            }
+        } finally {
+            handler1.finish();
+            handler2.finish();
+        }
+    }
+
+    @Test
     public void testUnserializableResponseReportedAsExceptional() throws Exception {
         serializer = spy(XStreamSerializer.builder().build());
         Object successResponse = new Object();
@@ -513,6 +558,31 @@ public class JGroupsConnectorTest {
         public Object handle(CommandMessage<?> message) {
             counter.incrementAndGet();
             return "The Reply!";
+        }
+    }
+
+    private static class BlockingCommandHandler implements MessageHandler<CommandMessage<?>> {
+
+        private final CountDownLatch finishLatch = new CountDownLatch(1);
+        private final CountDownLatch startedLatch = new CountDownLatch(1);
+
+        @Override
+        public Object handle(CommandMessage<?> message) {
+            startedLatch.countDown();
+            try {
+                finishLatch.await(30, TimeUnit.SECONDS);
+            } catch (InterruptedException ignore) {
+                // test will fail
+            }
+            return null;
+        }
+
+        private void awaitStarted() throws InterruptedException {
+            startedLatch.await(30, TimeUnit.SECONDS);
+        }
+
+        private void finish() {
+            finishLatch.countDown();
         }
     }
 
