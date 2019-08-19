@@ -20,7 +20,7 @@
     <parent>
         <groupId>org.axonframework.extensions.jgroups</groupId>
         <artifactId>axon-jgroups-parent</artifactId>
-        <version>4.2</version>
+        <version>4.2.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>axon-jgroups</artifactId>
