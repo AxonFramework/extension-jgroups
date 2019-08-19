@@ -16,7 +16,12 @@
 
 package org.axonframework.extensions.jgroups.commandhandling;
 
-import org.axonframework.commandhandling.*;
+import org.axonframework.commandhandling.CommandBus;
+import org.axonframework.commandhandling.CommandExecutionException;
+import org.axonframework.commandhandling.CommandMessage;
+import org.axonframework.commandhandling.CommandResultMessage;
+import org.axonframework.commandhandling.GenericCommandMessage;
+import org.axonframework.commandhandling.SimpleCommandBus;
 import org.axonframework.commandhandling.callbacks.FutureCallback;
 import org.axonframework.commandhandling.distributed.AnnotationRoutingStrategy;
 import org.axonframework.commandhandling.distributed.DistributedCommandBus;
@@ -33,10 +38,8 @@ import org.axonframework.serialization.SerializedObject;
 import org.axonframework.serialization.xml.XStreamSerializer;
 import org.jgroups.JChannel;
 import org.jgroups.stack.GossipRouter;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.ArgumentMatcher;
+import org.junit.*;
+import org.mockito.*;
 
 import java.nio.charset.Charset;
 import java.util.Arrays;
@@ -53,16 +56,10 @@ import static org.mockito.Mockito.*;
  */
 public class JgroupsConnectorTest_Gossip {
 
-    private JChannel channel1;
-    private JChannel channel2;
     private JGroupsConnector connector1;
-    private CommandBus mockCommandBus1;
     private JGroupsConnector connector2;
-    private CommandBus mockCommandBus2;
     private GossipRouter gossipRouter;
-    private String clusterName;
     private XStreamSerializer serializer;
-    private RoutingStrategy routingStrategy;
 
     private static JChannel createChannel() throws Exception {
         return new JChannel("org/axonframework/extensions/jgroups/commandhandling/tcp_gossip.xml");
@@ -70,12 +67,12 @@ public class JgroupsConnectorTest_Gossip {
 
     @Before
     public void setUp() throws Exception {
-        channel1 = createChannel();
-        channel2 = createChannel();
-        routingStrategy = new AnnotationRoutingStrategy(UnresolvedRoutingKeyPolicy.RANDOM_KEY);
-        mockCommandBus1 = spy(SimpleCommandBus.builder().build());
-        mockCommandBus2 = spy(SimpleCommandBus.builder().build());
-        clusterName = "test-" + new Random().nextInt(Integer.MAX_VALUE);
+        JChannel channel1 = createChannel();
+        JChannel channel2 = createChannel();
+        RoutingStrategy routingStrategy = new AnnotationRoutingStrategy(UnresolvedRoutingKeyPolicy.RANDOM_KEY);
+        CommandBus mockCommandBus1 = spy(SimpleCommandBus.builder().build());
+        CommandBus mockCommandBus2 = spy(SimpleCommandBus.builder().build());
+        String clusterName = "test-" + new Random().nextInt(Integer.MAX_VALUE);
         serializer = spy(XStreamSerializer.builder().build());
         connector1 = JGroupsConnector.builder()
                                      .localSegment(mockCommandBus1)
@@ -154,7 +151,7 @@ public class JgroupsConnectorTest_Gossip {
         CommandResultMessage<?> actual = callback.join();
         assertTrue(actual.isExceptional());
         assertTrue(actual.exceptionResult() instanceof HandlerExecutionException);
-        assertEquals("hello world", actual.exceptionDetails().orElse(null) );
+        assertEquals("hello world", actual.exceptionDetails().orElse(null));
     }
 
     @Test(timeout = 30000)
@@ -180,7 +177,7 @@ public class JgroupsConnectorTest_Gossip {
         connector2.connect();
         assertTrue("Failed to connect", connector2.awaitJoined(5, TimeUnit.SECONDS));
 
-        // now, they should detect eachother and start syncing their state
+        // now, they should detect each other and start syncing their state
         waitForConnectorSync();
 
         CommandGateway gateway1 = DefaultCommandGateway.builder().commandBus(bus1).build();
@@ -194,9 +191,12 @@ public class JgroupsConnectorTest_Gossip {
         try {
             gateway1.sendAndWait("Try this!");
             fail("Expected exception");
-        } catch (RemoteHandlingException e) {
+        } catch (CommandExecutionException e) {
+            Throwable cause = e.getCause();
+            assertTrue(cause instanceof RemoteHandlingException);
+            RemoteHandlingException remoteHandlingException = (RemoteHandlingException) cause;
             assertTrue("Wrong exception. \nConsistent hash status of connector2: \n" + connector2.getConsistentHash(),
-                       e.getExceptionDescriptions().stream().anyMatch(m -> m.contains("Mock")));
+                       remoteHandlingException.getExceptionDescriptions().stream().anyMatch(m -> m.contains("Mock")));
         }
     }
 
@@ -217,7 +217,7 @@ public class JgroupsConnectorTest_Gossip {
 
         private final AtomicInteger counter;
 
-        public CountingCommandHandler(AtomicInteger counter) {
+        private CountingCommandHandler(AtomicInteger counter) {
             this.counter = counter;
         }
 

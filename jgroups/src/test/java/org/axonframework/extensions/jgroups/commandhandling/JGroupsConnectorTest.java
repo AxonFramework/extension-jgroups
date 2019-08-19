@@ -16,7 +16,12 @@
 
 package org.axonframework.extensions.jgroups.commandhandling;
 
-import org.axonframework.commandhandling.*;
+import org.axonframework.commandhandling.CommandBus;
+import org.axonframework.commandhandling.CommandCallback;
+import org.axonframework.commandhandling.CommandMessage;
+import org.axonframework.commandhandling.CommandResultMessage;
+import org.axonframework.commandhandling.GenericCommandMessage;
+import org.axonframework.commandhandling.SimpleCommandBus;
 import org.axonframework.commandhandling.callbacks.FutureCallback;
 import org.axonframework.commandhandling.distributed.AnnotationRoutingStrategy;
 import org.axonframework.commandhandling.distributed.CommandBusConnectorCommunicationException;
@@ -35,18 +40,14 @@ import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.stack.IpAddress;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
@@ -214,10 +215,12 @@ public class JGroupsConnectorTest {
                                      .build();
 
         doAnswer(i -> {
-            connector1.receive(new Message(null, new JoinMessage(100, new CommandNameFilter("test"), 0, false)).setSrc(channel2.address()));
+            connector1.receive(new Message(
+                    null,
+                    new JoinMessage(100, new CommandNameFilter("test"), 0, false)).setSrc(channel2.address())
+            );
             return i.callRealMethod();
-                 }
-        ).when(channel1).connect(any());
+        }).when(channel1).connect(any());
         connector1.connect();
 
         verify(channel1).connect(any());
@@ -291,7 +294,6 @@ public class JGroupsConnectorTest {
                               .anyMatch(a -> a.equals(new IpAddress(12345))));
     }
 
-    @SuppressWarnings("unchecked")
     @Test(timeout = 30000)
     public void testUpdatesToMemberShipProcessedInOrder() throws Exception {
         assertNull(connector1.getNodeName());
@@ -385,20 +387,12 @@ public class JGroupsConnectorTest {
 
         connector1.disconnect();
 
-        try {
-            callback.get(10, TimeUnit.SECONDS);
-            fail("Expected to get callback with exception");
-        } catch (TimeoutException e) {
-            fail("Callback wasn't called after peer disconnected");
-        } catch (ExecutionException e) {
-            // We expect CommandBusConnectorCommunicationException
-            if (!(e.getCause() instanceof CommandBusConnectorCommunicationException)) {
-                throw e.getCause();
-            }
-        } finally {
-            handler1.finish();
-            handler2.finish();
-        }
+        CommandResultMessage<?> commandResultMessage = callback.get(10, TimeUnit.SECONDS);
+        assertTrue(commandResultMessage.isExceptional());
+        assertTrue(commandResultMessage.exceptionResult() instanceof CommandBusConnectorCommunicationException);
+
+        handler1.finish();
+        handler2.finish();
     }
 
     @Test
@@ -513,7 +507,7 @@ public class JGroupsConnectorTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testConnectAndDispatchMessagesWaitingOnCallback() throws Exception {
-        Integer numberOfDispatchedAndWaitedForCommands = 100;
+        int numberOfDispatchedAndWaitedForCommands = 100;
         String firstCommandHandlerName = "firstCommandHandlerName";
         String secondCommandHandlerName = "secondCommandHandlerName";
         int commandHandlingCounter = 0;
@@ -541,7 +535,7 @@ public class JGroupsConnectorTest {
                 futureCallback
         );
 
-        assertEquals(numberOfDispatchedAndWaitedForCommands, futureCallback.getResult().getPayload());
+        assertEquals(numberOfDispatchedAndWaitedForCommands, futureCallback.getResult().getPayload().intValue());
         verify(mockCommandBus1, times(50)).dispatch(any(CommandMessage.class), isA(CommandCallback.class));
         verify(mockCommandBus2, times(50)).dispatch(any(CommandMessage.class), isA(CommandCallback.class));
     }
