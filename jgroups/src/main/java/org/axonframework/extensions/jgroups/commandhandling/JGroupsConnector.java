@@ -20,7 +20,20 @@ import org.axonframework.commandhandling.CommandBus;
 import org.axonframework.commandhandling.CommandCallback;
 import org.axonframework.commandhandling.CommandMessage;
 import org.axonframework.commandhandling.CommandResultMessage;
-import org.axonframework.commandhandling.distributed.*;
+import org.axonframework.commandhandling.distributed.AnnotationRoutingStrategy;
+import org.axonframework.commandhandling.distributed.CommandBusConnector;
+import org.axonframework.commandhandling.distributed.CommandBusConnectorCommunicationException;
+import org.axonframework.commandhandling.distributed.CommandCallbackRepository;
+import org.axonframework.commandhandling.distributed.CommandCallbackWrapper;
+import org.axonframework.commandhandling.distributed.CommandMessageFilter;
+import org.axonframework.commandhandling.distributed.CommandRouter;
+import org.axonframework.commandhandling.distributed.ConsistentHash;
+import org.axonframework.commandhandling.distributed.ConsistentHashChangeListener;
+import org.axonframework.commandhandling.distributed.DistributedCommandBus;
+import org.axonframework.commandhandling.distributed.Member;
+import org.axonframework.commandhandling.distributed.RoutingStrategy;
+import org.axonframework.commandhandling.distributed.ServiceRegistryException;
+import org.axonframework.commandhandling.distributed.SimpleMember;
 import org.axonframework.commandhandling.distributed.commandfilter.DenyAll;
 import org.axonframework.common.AxonConfigurationException;
 import org.axonframework.common.AxonThreadFactory;
@@ -41,6 +54,7 @@ import java.io.OutputStream;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -82,6 +96,8 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
     private ExecutorService executorService;
     private final boolean executorProvided;
 
+    private volatile boolean shuttingDown = false;
+    private final Map<CommandCallbackWrapper, CompletableFuture<Void>> pendingCommands = new ConcurrentHashMap<>();
     private final CommandCallbackRepository<Address> callbackRepository = new CommandCallbackRepository<>();
     private final JoinCondition joinedCondition = new JoinCondition();
     private final Map<Address, VersionedMember> members = new ConcurrentHashMap<>();
@@ -200,6 +216,12 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
         }
     }
 
+    @Override
+    public CompletableFuture<Void> stopSendingCommands() {
+        shuttingDown = true;
+        return CompletableFuture.allOf(pendingCommands.values().toArray(new CompletableFuture[0]));
+    }
+
     /**
      * {@inheritDoc}
      * <p>
@@ -248,7 +270,9 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
             }));
             stream(left).forEach(key -> {
                 members.remove(key);
-                callbackRepository.cancelCallbacks(key);
+                callbackRepository.cancelCallbacksForChannel(key)
+                                  .forEach(callback -> Optional.ofNullable(pendingCommands.remove(callback))
+                                                               .ifPresent(c -> c.complete(null)));
             });
             stream(joined).filter(member -> !member.equals(localAddress))
                           .forEach(member -> sendMyConfigurationTo(member, true, membershipVersion.get()));
@@ -296,6 +320,8 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
             //noinspection unchecked
             callbackWrapper.reportResult(message.getCommandResultMessage(serializer));
         }
+        Optional.ofNullable(pendingCommands.remove(callbackWrapper))
+                .ifPresent(c -> c.complete(null));
     }
 
     private <C, R> void processDispatchMessage(Message msg, JGroupsDispatchMessage message) {
@@ -445,6 +471,7 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
 
     @Override
     public <C> void send(Member destination, CommandMessage<? extends C> command) throws Exception {
+        checkShuttingDown();
         channel.send(resolveAddress(destination), new JGroupsDispatchMessage(command, serializer, false));
     }
 
@@ -452,13 +479,20 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
     public <C, R> void send(Member destination,
                             CommandMessage<C> command,
                             CommandCallback<? super C, R> callback) throws Exception {
-        callbackRepository.store(
-                command.getIdentifier(),
-                new CommandCallbackWrapper<>(
-                        destination.getConnectionEndpoint(Address.class).orElse(channel.address()),
-                        command,
-                        callback));
+        checkShuttingDown();
+        CommandCallbackWrapper<Address, C, R> wrappedCallback = new CommandCallbackWrapper<>(
+                destination.getConnectionEndpoint(Address.class).orElse(channel.address()),
+                command,
+                callback);
+        pendingCommands.put(wrappedCallback, new CompletableFuture<>());
+        callbackRepository.store(command.getIdentifier(), wrappedCallback);
         channel.send(resolveAddress(destination), new JGroupsDispatchMessage(command, serializer, true));
+    }
+
+    private void checkShuttingDown() {
+        if (shuttingDown) {
+            throw new IllegalStateException("JGroupsConnector is shutting down, no new commands will be sent.");
+        }
     }
 
     @Override
