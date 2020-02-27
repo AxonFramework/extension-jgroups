@@ -38,6 +38,7 @@ import org.axonframework.commandhandling.distributed.commandfilter.DenyAll;
 import org.axonframework.common.AxonConfigurationException;
 import org.axonframework.common.AxonThreadFactory;
 import org.axonframework.common.Registration;
+import org.axonframework.lifecycle.ShutdownLatch;
 import org.axonframework.messaging.MessageHandler;
 import org.axonframework.messaging.MessageHandlerInterceptor;
 import org.axonframework.serialization.Serializer;
@@ -96,8 +97,8 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
     private ExecutorService executorService;
     private final boolean executorProvided;
 
-    private volatile boolean shuttingDown = false;
-    private final Map<CommandCallbackWrapper, CompletableFuture<Void>> pendingCommands = new ConcurrentHashMap<>();
+    private final ShutdownLatch shutdownLatch = new ShutdownLatch();
+    private final Map<CommandCallbackWrapper, ShutdownLatch.ActivityHandle> pendingCommands = new ConcurrentHashMap<>();
     private final CommandCallbackRepository<Address> callbackRepository = new CommandCallbackRepository<>();
     private final JoinCondition joinedCondition = new JoinCondition();
     private final Map<Address, VersionedMember> members = new ConcurrentHashMap<>();
@@ -196,6 +197,8 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
             executorService = Executors.newCachedThreadPool(new AxonThreadFactory("JGroupsConnector(" + clusterName + ")"));
         }
 
+        shutdownLatch.initialize();
+
         channel.setReceiver(this);
         channel.connect(clusterName);
 
@@ -217,9 +220,8 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
     }
 
     @Override
-    public CompletableFuture<Void> stopSendingCommands() {
-        shuttingDown = true;
-        return CompletableFuture.allOf(pendingCommands.values().toArray(new CompletableFuture[0]));
+    public CompletableFuture<Void> initiateShutdown() {
+        return shutdownLatch.initiateShutdown();
     }
 
     /**
@@ -272,7 +274,7 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
                 members.remove(key);
                 callbackRepository.cancelCallbacksForChannel(key)
                                   .forEach(callback -> Optional.ofNullable(pendingCommands.remove(callback))
-                                                               .ifPresent(c -> c.complete(null)));
+                                                               .ifPresent(ah -> ah.end()));
             });
             stream(joined).filter(member -> !member.equals(localAddress))
                           .forEach(member -> sendMyConfigurationTo(member, true, membershipVersion.get()));
@@ -321,7 +323,7 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
             callbackWrapper.reportResult(message.getCommandResultMessage(serializer));
         }
         Optional.ofNullable(pendingCommands.remove(callbackWrapper))
-                .ifPresent(c -> c.complete(null));
+                .ifPresent(ah -> ah.end());
     }
 
     private <C, R> void processDispatchMessage(Message msg, JGroupsDispatchMessage message) {
@@ -471,7 +473,7 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
 
     @Override
     public <C> void send(Member destination, CommandMessage<? extends C> command) throws Exception {
-        checkShuttingDown();
+        shutdownLatch.ifShuttingDown("JGroupsConnector is shutting down, no new commands will be sent.");
         channel.send(resolveAddress(destination), new JGroupsDispatchMessage(command, serializer, false));
     }
 
@@ -479,20 +481,14 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
     public <C, R> void send(Member destination,
                             CommandMessage<C> command,
                             CommandCallback<? super C, R> callback) throws Exception {
-        checkShuttingDown();
+        shutdownLatch.ifShuttingDown("JGroupsConnector is shutting down, no new commands will be sent.");
         CommandCallbackWrapper<Address, C, R> wrappedCallback = new CommandCallbackWrapper<>(
                 destination.getConnectionEndpoint(Address.class).orElse(channel.address()),
                 command,
                 callback);
-        pendingCommands.put(wrappedCallback, new CompletableFuture<>());
+        pendingCommands.put(wrappedCallback, shutdownLatch.registerActivity());
         callbackRepository.store(command.getIdentifier(), wrappedCallback);
         channel.send(resolveAddress(destination), new JGroupsDispatchMessage(command, serializer, true));
-    }
-
-    private void checkShuttingDown() {
-        if (shuttingDown) {
-            throw new IllegalStateException("JGroupsConnector is shutting down, no new commands will be sent.");
-        }
     }
 
     @Override

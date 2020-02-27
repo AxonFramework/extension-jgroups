@@ -21,7 +21,6 @@ import org.axonframework.commandhandling.CommandCallback;
 import org.axonframework.commandhandling.CommandMessage;
 import org.axonframework.commandhandling.CommandResultMessage;
 import org.axonframework.commandhandling.GenericCommandMessage;
-import org.axonframework.commandhandling.GenericCommandResultMessage;
 import org.axonframework.commandhandling.SimpleCommandBus;
 import org.axonframework.commandhandling.callbacks.FutureCallback;
 import org.axonframework.commandhandling.distributed.AnnotationRoutingStrategy;
@@ -33,6 +32,7 @@ import org.axonframework.commandhandling.distributed.UnresolvedRoutingKeyPolicy;
 import org.axonframework.commandhandling.distributed.commandfilter.CommandNameFilter;
 import org.axonframework.commandhandling.distributed.commandfilter.DenyAll;
 import org.axonframework.extensions.jgroups.commandhandling.utils.MockException;
+import org.axonframework.lifecycle.ShutdownInProgressException;
 import org.axonframework.messaging.GenericMessage;
 import org.axonframework.messaging.MessageHandler;
 import org.axonframework.serialization.SerializationException;
@@ -566,12 +566,12 @@ public class JGroupsConnectorTest {
                             System.out.println(crm);
                             result.set((String) crm.getPayload());
                         });
-        connector1.stopSendingCommands().get(400, TimeUnit.MILLISECONDS);
+        connector1.initiateShutdown().get(400, TimeUnit.MILLISECONDS);
         assertEquals("great success", result.get());
         try {
             connector1.send(me, command);
             fail("After stopping no new commands should be accepted.");
-        } catch (IllegalStateException e) {
+        } catch (ShutdownInProgressException e) {
             // expected
         }
     }
