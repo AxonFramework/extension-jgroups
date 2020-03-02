@@ -47,6 +47,7 @@ import org.junit.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -173,7 +174,7 @@ public class JGroupsConnectorTest {
         // wait for both connectors to have the same view
         waitForConnectorSync();
 
-        List<FutureCallback> callbacks = new ArrayList<>();
+        List<FutureCallback<Object, Object>> callbacks = new ArrayList<>();
 
         //noinspection Duplicates
         for (int t = 0; t < 100; t++) {
@@ -343,7 +344,7 @@ public class JGroupsConnectorTest {
         // wait for both connectors to have the same view
         waitForConnectorSync();
 
-        List<FutureCallback> callbacks = new ArrayList<>();
+        List<FutureCallback<Object, Object>> callbacks = new ArrayList<>();
 
         //noinspection Duplicates
         for (int t = 0; t < 100; t++) {
@@ -459,7 +460,7 @@ public class JGroupsConnectorTest {
         // wait for both connectors to have the same view
         waitForConnectorSync();
 
-        List<FutureCallback> callbacks = new ArrayList<>();
+        List<FutureCallback<Object, Object>> callbacks = new ArrayList<>();
 
         for (int t = 0; t < 100; t++) {
             FutureCallback<Object, Object> callback = new FutureCallback<>();
@@ -542,6 +543,13 @@ public class JGroupsConnectorTest {
         assertEquals(numberOfDispatchedAndWaitedForCommands, futureCallback.getResult().getPayload().intValue());
         verify(mockCommandBus1, times(50)).dispatch(any(CommandMessage.class), isA(CommandCallback.class));
         verify(mockCommandBus2, times(50)).dispatch(any(CommandMessage.class), isA(CommandCallback.class));
+    }
+
+    @Test
+    public void testLocalSegmentReturnsExpectedCommandBus() {
+        Optional<CommandBus> result = connector1.localSegment();
+        assertTrue(result.isPresent());
+        assertEquals(mockCommandBus1, result.get());
     }
 
     @Test

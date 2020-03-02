@@ -73,11 +73,14 @@ import static org.axonframework.common.ObjectUtils.getOrDefault;
 
 /**
  * A Connector for the {@link DistributedCommandBus} based on JGroups that acts both as the discovery and routing
- * mechanism (implementing {@link CommandRouter}) as well as the Connector between nodes
- * (implementing {@link CommandBusConnector}).
+ * mechanism (implementing {@link CommandRouter}) as well as the Connector between nodes (implementing {@link
+ * CommandBusConnector}).
  * <p>
  * After configuring the Connector, it needs to {@link #connect()}, before it can start dispatching messages to other
  * nodes. For a clean shutdown, connectors should {@link #disconnect()} to notify other nodes of the node leaving.
+ *
+ * @author Allard Buijze
+ * @since 2.0
  */
 public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConnector {
 
@@ -112,10 +115,10 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
     /**
      * Instantiate a {@link JGroupsConnector} based on the fields contained in the {@link Builder}.
      * <p>
-     * Will validate that the {@code localSegment}, {@link JChannel}, {@link Serializer},
-     * {@link RoutingStrategy} and {@link ConsistentHashChangeListener} are not {@code null}, and will throw an
-     * {@link AxonConfigurationException} if any of them is {@code null}. The {@code clusterName} is verified to be non
-     * null and non empty, throwing the AxonConfigurationException if this is false.
+     * Will validate that the {@code localSegment}, {@link JChannel}, {@link Serializer}, {@link RoutingStrategy} and
+     * {@link ConsistentHashChangeListener} are not {@code null}, and will throw an {@link AxonConfigurationException}
+     * if any of them is {@code null}. The {@code clusterName} is verified to be non null and non empty, throwing the
+     * AxonConfigurationException if this is false.
      *
      * @param builder the {@link Builder} used to instantiate a {@link JGroupsConnector} instance
      */
@@ -139,11 +142,11 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
     /**
      * Instantiate a Builder to be able to create a {@link JGroupsConnector}.
      * <p>
-     * The {@link RoutingStrategy} is defaulted to an {@link AnnotationRoutingStrategy}, and the
-     * {@link ConsistentHashChangeListener} to a no-op solution. The {@link ExecutorService} is defaulted to an
-     * {@link Executors#newCachedThreadPool}, using an {@link AxonThreadFactory} to create threads. The
-     * {@link CommandBus}, {@link JChannel}, {@code clusterName} and {@link Serializer} are <b>hard requirements</b> and
-     * as such should be provided.
+     * The {@link RoutingStrategy} is defaulted to an {@link AnnotationRoutingStrategy}, and the {@link
+     * ConsistentHashChangeListener} to a no-op solution. The {@link ExecutorService} is defaulted to an {@link
+     * Executors#newCachedThreadPool}, using an {@link AxonThreadFactory} to create threads. The {@link CommandBus},
+     * {@link JChannel}, {@code clusterName} and {@link Serializer} are <b>hard requirements</b> and as such should be
+     * provided.
      *
      * @return a Builder to be able to create a {@link JGroupsConnector}
      */
@@ -183,8 +186,8 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
      * cluster.
      * <p>
      * The Join messages have been sent, but may not have been processed yet when the method returns. Before sending
-     * messages via this connector, await for the joining process to be completed (see {@link #awaitJoined() and
-     * {@link #awaitJoined(long, TimeUnit)}}.
+     * messages via this connector, await for the joining process to be completed (see {@link #awaitJoined() and {@link
+     * #awaitJoined(long, TimeUnit)}}.
      *
      * @throws Exception when an error occurs connecting or communicating with the cluster
      */
@@ -194,7 +197,8 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
         }
 
         if (!executorProvided) {
-            executorService = Executors.newCachedThreadPool(new AxonThreadFactory("JGroupsConnector(" + clusterName + ")"));
+            executorService = Executors.newCachedThreadPool(new AxonThreadFactory(
+                    "JGroupsConnector(" + clusterName + ")"));
         }
 
         shutdownLatch.initialize();
@@ -239,7 +243,6 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
      * <p>
      * Operation not implemented/supported for the {@link JGroupsConnector}.
      */
-    @SuppressWarnings("unchecked")
     @Override
     public void setState(InputStream input) {
         // Not supported
@@ -314,6 +317,7 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
     }
 
     private void processReplyMessage(JGroupsReplyMessage message) {
+        //noinspection rawtypes
         CommandCallbackWrapper callbackWrapper = callbackRepository.fetchAndRemove(message.getCommandIdentifier());
         if (callbackWrapper == null) {
             logger.warn("Received a callback for a message that has either already received a callback, "
@@ -329,6 +333,7 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
     private <C, R> void processDispatchMessage(Message msg, JGroupsDispatchMessage message) {
         if (message.isExpectReply()) {
             try {
+                //noinspection rawtypes
                 CommandMessage commandMessage = message.getCommandMessage(serializer);
                 //noinspection unchecked
                 localSegment.dispatch(commandMessage,
@@ -347,7 +352,8 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
         }
     }
 
-    private <R> void sendReply(Address address, String commandIdentifier, CommandResultMessage<R> commandResultMessage) {
+    private <R> void sendReply(Address address, String commandIdentifier,
+                               CommandResultMessage<R> commandResultMessage) {
         Object reply;
         try {
             reply = new JGroupsReplyMessage(commandIdentifier, commandResultMessage, serializer);
@@ -424,11 +430,10 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
     }
 
     /**
-     * This method blocks until this member has successfully joined the other members, until the thread is
-     * interrupted, or when joining has failed.
+     * This method blocks until this member has successfully joined the other members, until the thread is interrupted,
+     * or when joining has failed.
      *
      * @return {@code true} if the member successfully joined, otherwise {@code false}.
-     *
      * @throws InterruptedException when the thread is interrupted while joining
      */
     public boolean awaitJoined() throws InterruptedException {
@@ -438,13 +443,12 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
 
 
     /**
-     * This method blocks until this member has successfully joined the other members, until the thread is
-     * interrupted, when the given number of milliseconds have passed, or when joining has failed.
+     * This method blocks until this member has successfully joined the other members, until the thread is interrupted,
+     * when the given number of milliseconds have passed, or when joining has failed.
      *
      * @param timeout  The amount of time to wait for the connection to complete
      * @param timeUnit The time unit of the timeout
      * @return {@code true} if the member successfully joined, otherwise {@code false}.
-     *
      * @throws InterruptedException when the thread is interrupted while joining
      */
     public boolean awaitJoined(long timeout, TimeUnit timeUnit) throws InterruptedException {
@@ -501,8 +505,7 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
      *
      * @param destination The node of which to solve the Address
      * @return The JGroups Address of the given node
-     *
-     * @throws CommandBusConnectorCommunicationException when an error occurs resolving the adress
+     * @throws CommandBusConnectorCommunicationException when an error occurs resolving the address
      */
     protected Address resolveAddress(Member destination) {
         return destination.getConnectionEndpoint(Address.class)
@@ -523,11 +526,16 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
         return localSegment.registerHandlerInterceptor(handlerInterceptor);
     }
 
+    @Override
+    public Optional<CommandBus> localSegment() {
+        return Optional.of(localSegment);
+    }
+
     /**
-     * Builder class to instantiate a {@link JGroupsConnector}. The {@link RoutingStrategy} is defaulted to an
-     * {@link AnnotationRoutingStrategy}, and the {@link ConsistentHashChangeListener} to a no-op solution.
-     * The {@link CommandBus}, {@link JChannel}, {@code clusterName} and {@link Serializer} are a <b>hard
-     * requirements</b> and as such should be provided.
+     * Builder class to instantiate a {@link JGroupsConnector}. The {@link RoutingStrategy} is defaulted to an {@link
+     * AnnotationRoutingStrategy}, and the {@link ConsistentHashChangeListener} to a no-op solution. The {@link
+     * CommandBus}, {@link JChannel}, {@code clusterName} and {@link Serializer} are a <b>hard requirements</b> and as
+     * such should be provided.
      */
     public static class Builder {
 
@@ -589,8 +597,8 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
 
         /**
          * Sets the {@link RoutingStrategy} used to define the key based on which Command Messages are routed to their
-         * respective handler nodes. Defaults to a {@link AnnotationRoutingStrategy}, which searches for the
-         * {@link org.axonframework.commandhandling.RoutingKey} annotated field as the routing key.
+         * respective handler nodes. Defaults to a {@link AnnotationRoutingStrategy}, which searches for the {@link
+         * org.axonframework.commandhandling.RoutingKey} annotated field as the routing key.
          *
          * @param routingStrategy the {@link RoutingStrategy} used to define the key based on which Command Messages are
          *                        routed to their respective handler nodes
@@ -620,13 +628,14 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
         /**
          * Sets the {@link ExecutorService} used to create threads which deal with the message receiving process of this
          * connector. If none is provided, this will be defaulted to an {@link Executors#newCachedThreadPool}, using an
-         * {@link AxonThreadFactory} for thread creation. It will be defaulted upon the
-         * {@link JGroupsConnector#connect()} call, to ensure it is not created without being used.
+         * {@link AxonThreadFactory} for thread creation. It will be defaulted upon the {@link
+         * JGroupsConnector#connect()} call, to ensure it is not created without being used.
          *
          * @param executorService a {@link ExecutorService} used to create threads which deal with the message receiving
          *                        process of this connector
          * @return the current Builder instance, for fluent interfacing
          */
+        @SuppressWarnings("unused")
         public Builder executorService(ExecutorService executorService) {
             this.executorService = executorService;
             return this;
