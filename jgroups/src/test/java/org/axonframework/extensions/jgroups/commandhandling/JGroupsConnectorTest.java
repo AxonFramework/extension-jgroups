@@ -562,10 +562,7 @@ public class JGroupsConnectorTest {
         CommandMessage<String> command = GenericCommandMessage.asCommandMessage("command");
         connector1.send(me,
                         command,
-                        (cm, crm) -> {
-                            System.out.println(crm);
-                            result.set((String) crm.getPayload());
-                        });
+                        (cm, crm) -> result.set((String) crm.getPayload()));
         connector1.initiateShutdown().get(400, TimeUnit.MILLISECONDS);
         assertEquals("great success", result.get());
         try {

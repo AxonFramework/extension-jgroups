@@ -98,7 +98,7 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
     private final boolean executorProvided;
 
     private final ShutdownLatch shutdownLatch = new ShutdownLatch();
-    private final Map<CommandCallbackWrapper, ShutdownLatch.ActivityHandle> pendingCommands = new ConcurrentHashMap<>();
+    private final Map<String, ShutdownLatch.ActivityHandle> pendingCommands = new ConcurrentHashMap<>();
     private final CommandCallbackRepository<Address> callbackRepository = new CommandCallbackRepository<>();
     private final JoinCondition joinedCondition = new JoinCondition();
     private final Map<Address, VersionedMember> members = new ConcurrentHashMap<>();
@@ -273,8 +273,8 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
             stream(left).forEach(key -> {
                 members.remove(key);
                 callbackRepository.cancelCallbacksForChannel(key)
-                                  .forEach(callback -> Optional.ofNullable(pendingCommands.remove(callback))
-                                                               .ifPresent(ah -> ah.end()));
+                                  .forEach(callback -> Optional.ofNullable(pendingCommands.remove(callback.getMessage().getIdentifier()))
+                                                               .ifPresent(ShutdownLatch.ActivityHandle::end));
             });
             stream(joined).filter(member -> !member.equals(localAddress))
                           .forEach(member -> sendMyConfigurationTo(member, true, membershipVersion.get()));
@@ -322,8 +322,8 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
             //noinspection unchecked
             callbackWrapper.reportResult(message.getCommandResultMessage(serializer));
         }
-        Optional.ofNullable(pendingCommands.remove(callbackWrapper))
-                .ifPresent(ah -> ah.end());
+        Optional.ofNullable(pendingCommands.remove(callbackWrapper.getMessage().getIdentifier()))
+                .ifPresent(ShutdownLatch.ActivityHandle::end);
     }
 
     private <C, R> void processDispatchMessage(Message msg, JGroupsDispatchMessage message) {
@@ -486,7 +486,7 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
                 destination.getConnectionEndpoint(Address.class).orElse(channel.address()),
                 command,
                 callback);
-        pendingCommands.put(wrappedCallback, shutdownLatch.registerActivity());
+        pendingCommands.put(command.getIdentifier(), shutdownLatch.registerActivity());
         callbackRepository.store(command.getIdentifier(), wrappedCallback);
         channel.send(resolveAddress(destination), new JGroupsDispatchMessage(command, serializer, true));
     }
