@@ -27,10 +27,12 @@ import org.axonframework.commandhandling.distributed.AnnotationRoutingStrategy;
 import org.axonframework.commandhandling.distributed.CommandBusConnectorCommunicationException;
 import org.axonframework.commandhandling.distributed.DistributedCommandBus;
 import org.axonframework.commandhandling.distributed.RoutingStrategy;
+import org.axonframework.commandhandling.distributed.SimpleMember;
 import org.axonframework.commandhandling.distributed.UnresolvedRoutingKeyPolicy;
 import org.axonframework.commandhandling.distributed.commandfilter.CommandNameFilter;
 import org.axonframework.commandhandling.distributed.commandfilter.DenyAll;
 import org.axonframework.extensions.jgroups.commandhandling.utils.MockException;
+import org.axonframework.lifecycle.ShutdownInProgressException;
 import org.axonframework.messaging.GenericMessage;
 import org.axonframework.messaging.MessageHandler;
 import org.axonframework.serialization.SerializationException;
@@ -50,7 +52,9 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
+import static org.axonframework.commandhandling.distributed.SimpleMember.LOCAL_MEMBER;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
@@ -546,6 +550,35 @@ public class JGroupsConnectorTest {
         Optional<CommandBus> result = connector1.localSegment();
         assertTrue(result.isPresent());
         assertEquals(mockCommandBus1, result.get());
+    }
+
+    @Test
+    public void testStopSendingCommands() throws Exception {
+        connector1.connect();
+        connector1.awaitJoined(10, TimeUnit.SECONDS);
+
+        Address localAddress = channel1.getAddress();
+        String localName = localAddress.toString();
+        SimpleMember<Address> me = new SimpleMember<>(localName, localAddress, LOCAL_MEMBER, null);
+
+        connector1.subscribe(String.class.getName(), message -> {
+            Thread.sleep(200);
+            return "great success";
+        });
+
+        AtomicReference<String> result = new AtomicReference<>();
+        CommandMessage<String> command = GenericCommandMessage.asCommandMessage("command");
+        connector1.send(me,
+                        command,
+                        (cm, crm) -> result.set((String) crm.getPayload()));
+        connector1.initiateShutdown().get(400, TimeUnit.MILLISECONDS);
+        assertEquals("great success", result.get());
+        try {
+            connector1.send(me, command);
+            fail("After stopping no new commands should be accepted.");
+        } catch (ShutdownInProgressException e) {
+            // expected
+        }
     }
 
     private static class CountingCommandHandler implements MessageHandler<CommandMessage<?>> {
