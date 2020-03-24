@@ -15,13 +15,11 @@
   ~ limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <groupId>org.axonframework.extensions.jgroups</groupId>
     <artifactId>axon-jgroups-parent</artifactId>
-    <version>4.3-SNAPSHOT</version>
+    <version>4.3</version>
     <modules>
         <module>jgroups</module>
         <module>jgroups-spring-boot-autoconfigure</module>
@@ -402,7 +400,7 @@
         <connection>scm:git:git://github.com/AxonFramework/extension-jgroups.git</connection>
         <developerConnection>scm:git:git@github.com:AxonFramework/extension-jgroups.git</developerConnection>
         <url>https://github.com/AxonFramework/extension-jgroups</url>
-        <tag>HEAD</tag>
+        <tag>axon-jgroups-4.3</tag>
     </scm>
 
     <developers>
