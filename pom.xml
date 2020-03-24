@@ -19,7 +19,7 @@
 
     <groupId>org.axonframework.extensions.jgroups</groupId>
     <artifactId>axon-jgroups-parent</artifactId>
-    <version>4.3</version>
+    <version>4.4-SNAPSHOT</version>
     <modules>
         <module>jgroups</module>
         <module>jgroups-spring-boot-autoconfigure</module>
@@ -400,7 +400,7 @@
         <connection>scm:git:git://github.com/AxonFramework/extension-jgroups.git</connection>
         <developerConnection>scm:git:git@github.com:AxonFramework/extension-jgroups.git</developerConnection>
         <url>https://github.com/AxonFramework/extension-jgroups</url>
-        <tag>axon-jgroups-4.3</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <developers>
