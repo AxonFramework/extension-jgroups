@@ -19,7 +19,7 @@
 
     <groupId>org.axonframework.extensions.jgroups</groupId>
     <artifactId>axon-jgroups-parent</artifactId>
-    <version>4.4.1-SNAPSHOT</version>
+    <version>4.5-SNAPSHOT</version>
     <modules>
         <module>jgroups</module>
         <module>jgroups-spring-boot-autoconfigure</module>
