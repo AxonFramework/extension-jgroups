@@ -1,7 +1,7 @@
 # Axon Framework - JGroups Extension
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.axonframework.extensions.jgroups/axon-jgroups/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.axonframework.extensions.jgroups/axon-jgroups/)
 ![Build Status](https://github.com/AxonFramework/extension-jgroups/workflows/JGroups%20Extension/badge.svg?branch=master)
-[![SonarCloud Gate Status](https://sonarcloud.io/api/project_badges/measure?project=AxonFramework_extension-jgroups&metric=alert_status)](https://sonarcloud.io/dashboard?id=AxonFramework_extension-jgroups)
+[![SonarCloud Status](https://sonarcloud.io/api/project_badges/measure?project=AxonFramework_extension-jgroups&metric=alert_status)](https://sonarcloud.io/dashboard?id=AxonFramework_extension-jgroups)
 
 Axon Framework is a framework for building evolutionary, event-driven microservice systems,
  based on the principles of Domain Driven Design, Command-Query Responsibility Segregation (CQRS) and Event Sourcing.
