@@ -44,7 +44,7 @@ import java.util.concurrent.TimeUnit;
  * @since 2.0
  */
 public class JGroupsConnectorFactoryBean implements FactoryBean<JGroupsConnector>, InitializingBean, SmartLifecycle,
-                                                    BeanNameAware, ApplicationContextAware {
+        BeanNameAware, ApplicationContextAware {
 
     private JGroupsConnector connector;
     private JChannelFactory channelFactory = new JGroupsXmlConfigurationChannelFactory("tcp_mcast.xml");
@@ -111,9 +111,9 @@ public class JGroupsConnectorFactoryBean implements FactoryBean<JGroupsConnector
     }
 
     /**
-     * Sets the serializer used to serialize events before they are dispatched to the destination. All members
-     * connected to the same channel must use compatible serializers.
-     * <p/>
+     * Sets the serializer used to serialize events before they are dispatched to the destination. All members connected
+     * to the same channel must use compatible serializers.
+     * <p>
      * Default to an autowired Serializer.
      *
      * @param serializer the serializer to serialize commands with
@@ -124,8 +124,8 @@ public class JGroupsConnectorFactoryBean implements FactoryBean<JGroupsConnector
 
     /**
      * Sets the JGroups configuration file to load. Defaults to configuration using TCP with multicast discovery
-     * (tcp_mcast.xml). Alternatively the JChannel can be instantiated programatically by setting the
-     * {@link #setChannelFactory JChannelFactory}.
+     * (tcp_mcast.xml). Alternatively the JChannel can be instantiated programatically by setting the {@link
+     * #setChannelFactory JChannelFactory}.
      *
      * @param configuration the JGroups configuration file
      */
@@ -164,7 +164,7 @@ public class JGroupsConnectorFactoryBean implements FactoryBean<JGroupsConnector
 
     /**
      * Optionally sets the logical channel name of the channel. If not provided JGroups will generate a default name.
-     * <p/>
+     * <p>
      * Note that each member of a cluster should have a unique channel name.
      *
      * @param channelName The logical name to give to the channel
@@ -175,11 +175,11 @@ public class JGroupsConnectorFactoryBean implements FactoryBean<JGroupsConnector
 
     /**
      * Sets the number of milliseconds to wait for this member to join the group. Setting this to a non-negative number
-     * will cause the start() method to block for at most the given number of milliseconds. After that timeout,
-     * attempts to join the cluster will be performed on the background.
-     * <p/>
+     * will cause the start() method to block for at most the given number of milliseconds. After that timeout, attempts
+     * to join the cluster will be performed on the background.
+     * <p>
      * Setting a negative value will cause the {@link #start()} method to wait until the member joined the cluster.
-     * <p/>
+     * <p>
      * Defaults to -1, which causes the {@link #start()} to wait indefinitely, until the member has joined the cluster.
      *
      * @param joinTimeout The number of milliseconds to wait for the member to join the cluster

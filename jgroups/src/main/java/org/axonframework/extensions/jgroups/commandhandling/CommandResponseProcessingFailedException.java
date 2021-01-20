@@ -20,7 +20,7 @@ import org.axonframework.common.AxonNonTransientException;
 /**
  * Exception indicating that a failure occurred during processing of a command response. Typically this would imply an
  * command response or exception message that could not be serialized.
- * <p/>
+ * <p>
  * Typically, this exception indicates a non-transient exception.
  *
  * @author Srideep Prasad
