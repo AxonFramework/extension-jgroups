@@ -1,5 +1,13 @@
 version: 2
 updates:
+- package-ecosystem: github-actions
+  directory: "/"
+  schedule:
+    interval: daily
+  open-pull-requests-limit: 5
+  reviewers:
+    - "amarjanovic"
+    - "stefanvozd"
 - package-ecosystem: maven
   directory: "/"
   schedule:
