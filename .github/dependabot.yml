@@ -12,7 +12,7 @@ updates:
     - "Status: In Progress"
   # Add reviewers
   reviewers:
-    - "amarjanovic"
+    - "smcvb"
     - "stefanvozd"
   milestone: 6
 - package-ecosystem: maven
