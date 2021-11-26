@@ -26,7 +26,7 @@
 
     <groupId>org.axonframework.extensions.jgroups</groupId>
     <artifactId>axon-jgroups-spring-boot-starter</artifactId>
-    <version>4.5.1</version>
+    <version>4.5.2-SNAPSHOT</version>
 
     <name>Axon Framework JGroups Extension - Spring Boot Starter</name>
     <description>Spring Boot Starter module for the JGroups Extension of Axon Framework</description>
@@ -155,7 +155,7 @@
         <connection>scm:git:git://github.com/AxonFramework/extension-jgroups.git</connection>
         <developerConnection>scm:git:git@github.com:AxonFramework/extension-jgroups.git</developerConnection>
         <url>https://github.com/AxonFramework/extension-jgroups</url>
-        <tag>axon-jgroups-4.5.1</tag>
+        <tag>HEAD</tag>
     </scm>
 
 </project>
