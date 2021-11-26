@@ -32,12 +32,12 @@ import org.axonframework.commandhandling.distributed.UnresolvedRoutingKeyPolicy;
 import org.axonframework.commandhandling.distributed.commandfilter.CommandNameFilter;
 import org.axonframework.commandhandling.distributed.commandfilter.DenyAll;
 import org.axonframework.extensions.jgroups.commandhandling.utils.MockException;
+import org.axonframework.extensions.jgroups.commandhandling.utils.TestSerializer;
 import org.axonframework.lifecycle.ShutdownInProgressException;
 import org.axonframework.messaging.GenericMessage;
 import org.axonframework.messaging.MessageHandler;
 import org.axonframework.serialization.SerializationException;
 import org.axonframework.serialization.Serializer;
-import org.axonframework.serialization.xml.XStreamSerializer;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
@@ -72,9 +72,9 @@ public class JGroupsConnectorTest {
     private JGroupsConnector connector2;
     private CommandBus mockCommandBus2;
     private DistributedCommandBus distributedCommandBus2;
-    private Serializer serializer;
     private String clusterName;
     private RoutingStrategy routingStrategy;
+    private Serializer serializer = TestSerializer.xStreamSerializer();
 
     private static void closeSilently(JChannel channel) {
         try {
@@ -96,20 +96,19 @@ public class JGroupsConnectorTest {
         mockCommandBus1 = spy(SimpleCommandBus.builder().build());
         mockCommandBus2 = spy(SimpleCommandBus.builder().build());
         clusterName = "test-" + new Random().nextInt(Integer.MAX_VALUE);
-        serializer = XStreamSerializer.builder().build();
         connector1 = JGroupsConnector.builder()
                                      .localSegment(mockCommandBus1)
                                      .channel(channel1)
                                      .clusterName(clusterName)
-                                     .serializer(serializer)
                                      .routingStrategy(routingStrategy)
+                                     .serializer(serializer)
                                      .build();
         connector2 = JGroupsConnector.builder()
                                      .localSegment(mockCommandBus2)
                                      .channel(channel2)
                                      .clusterName(clusterName)
-                                     .serializer(serializer)
                                      .routingStrategy(routingStrategy)
+                                     .serializer(serializer)
                                      .build();
 
         distributedCommandBus1 = DistributedCommandBus.builder()
@@ -402,7 +401,7 @@ public class JGroupsConnectorTest {
 
     @Test
     public void testUnserializableResponseReportedAsExceptional() throws Exception {
-        serializer = spy(XStreamSerializer.builder().build());
+        serializer = spy(serializer);
         Object successResponse = new Object();
         Exception failureResponse = new MockException("This cannot be serialized");
         when(serializer.serialize(successResponse, byte[].class)).thenThrow(new SerializationException(
