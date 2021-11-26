@@ -20,8 +20,8 @@ import org.axonframework.commandhandling.CommandBus;
 import org.axonframework.commandhandling.CommandMessage;
 import org.axonframework.commandhandling.SimpleCommandBus;
 import org.axonframework.commandhandling.distributed.RoutingStrategy;
+import org.axonframework.extensions.jgroups.commandhandling.utils.TestSerializer;
 import org.axonframework.serialization.Serializer;
-import org.axonframework.serialization.xml.XStreamSerializer;
 import org.jgroups.JChannel;
 import org.junit.*;
 import org.springframework.context.ApplicationContext;
@@ -39,12 +39,14 @@ public class JGroupsConnectorFactoryBeanTest {
     private JChannel mockChannel;
     private JGroupsConnector mockConnector;
 
+    Serializer serializer = TestSerializer.xStreamSerializer();
+
     @Before
     public void setUp() {
         mockApplicationContext = mock(ApplicationContext.class);
         mockChannel = mock(JChannel.class);
         mockConnector = mock(JGroupsConnector.class);
-        when(mockApplicationContext.getBean(Serializer.class)).thenReturn(XStreamSerializer.builder().build());
+        when(mockApplicationContext.getBean(Serializer.class)).thenReturn(serializer);
         testSubject = spy(new ConnectorInstantiationExposingFactoryBean());
         testSubject.setChannelFactory(() -> mockChannel);
         testSubject.setBeanName("beanName");
@@ -75,7 +77,6 @@ public class JGroupsConnectorFactoryBeanTest {
     @Test
     public void testCreateWithSpecifiedValues() throws Exception {
         testSubject.setClusterName("ClusterName");
-        XStreamSerializer serializer = XStreamSerializer.builder().build();
         testSubject.setSerializer(serializer);
         SimpleCommandBus localSegment = SimpleCommandBus.builder().build();
         testSubject.setLocalSegment(localSegment);
@@ -107,7 +108,6 @@ public class JGroupsConnectorFactoryBeanTest {
     public void testCreateWithCustomConfigurationFile() {
         testSubject.setConfiguration("does-not-exist");
         testSubject.setClusterName("ClusterName");
-        XStreamSerializer serializer = XStreamSerializer.builder().build();
         testSubject.setSerializer(serializer);
         SimpleCommandBus localSegment = SimpleCommandBus.builder().build();
         testSubject.setLocalSegment(localSegment);

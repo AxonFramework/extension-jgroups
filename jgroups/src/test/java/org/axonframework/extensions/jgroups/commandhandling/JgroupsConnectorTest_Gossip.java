@@ -30,12 +30,13 @@ import org.axonframework.commandhandling.distributed.UnresolvedRoutingKeyPolicy;
 import org.axonframework.commandhandling.distributed.commandfilter.AcceptAll;
 import org.axonframework.commandhandling.gateway.CommandGateway;
 import org.axonframework.commandhandling.gateway.DefaultCommandGateway;
+import org.axonframework.extensions.jgroups.commandhandling.utils.TestSerializer;
 import org.axonframework.messaging.GenericMessage;
 import org.axonframework.messaging.HandlerExecutionException;
 import org.axonframework.messaging.MessageHandler;
 import org.axonframework.messaging.RemoteHandlingException;
 import org.axonframework.serialization.SerializedObject;
-import org.axonframework.serialization.xml.XStreamSerializer;
+import org.axonframework.serialization.Serializer;
 import org.jgroups.JChannel;
 import org.jgroups.stack.GossipRouter;
 import org.junit.*;
@@ -59,7 +60,7 @@ public class JgroupsConnectorTest_Gossip {
     private JGroupsConnector connector1;
     private JGroupsConnector connector2;
     private GossipRouter gossipRouter;
-    private XStreamSerializer serializer;
+    private Serializer serializer;
 
     private static JChannel createChannel() throws Exception {
         return new JChannel("org/axonframework/extensions/jgroups/commandhandling/tcp_gossip.xml");
@@ -73,7 +74,7 @@ public class JgroupsConnectorTest_Gossip {
         CommandBus mockCommandBus1 = spy(SimpleCommandBus.builder().build());
         CommandBus mockCommandBus2 = spy(SimpleCommandBus.builder().build());
         String clusterName = "test-" + new Random().nextInt(Integer.MAX_VALUE);
-        serializer = spy(XStreamSerializer.builder().build());
+        serializer = spy(TestSerializer.xStreamSerializer());
         connector1 = JGroupsConnector.builder()
                                      .localSegment(mockCommandBus1)
                                      .channel(channel1)
