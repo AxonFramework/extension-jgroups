@@ -13,7 +13,7 @@ updates:
   # Add reviewers
   reviewers:
     - "smcvb"
-    - "stefanvozd"
+    - "schananas"
   milestone: 6
 - package-ecosystem: maven
   directory: "/"
