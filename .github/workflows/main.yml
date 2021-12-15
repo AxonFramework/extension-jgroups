@@ -44,10 +44,10 @@ jobs:
         run: |
           ./mvnw -B -U clean verify
 
-  - name: Sonar Analysis
-      if: matrix.sonar-enabled
-      run: |
-        ./mvnw -B -Pcoverage sonar:sonar \
+      - name: Sonar Analysis
+        if: matrix.sonar-enabled
+        run: |
+          ./mvnw -B -Pcoverage sonar:sonar \
           -Dsonar.projectKey=AxonFramework_extension-jgroups \
           -Dsonar.organization=axonframework \
           -Dsonar.host.url=https://sonarcloud.io \
