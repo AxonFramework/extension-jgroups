@@ -45,6 +45,7 @@ import org.axonframework.serialization.Serializer;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
+import org.jgroups.ObjectMessage;
 import org.jgroups.Receiver;
 import org.jgroups.View;
 import org.slf4j.Logger;
@@ -286,11 +287,6 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
     }
 
     @Override
-    public void suspect(Address suspectedMember) {
-        logger.warn("Member is suspect: {}", suspectedMember);
-    }
-
-    @Override
     public void block() {
         //We are not going to block
     }
@@ -420,7 +416,7 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
         try {
             logger.info("Sending my configuration to {}.", getOrDefault(endpoint, "all nodes"));
             Message returnJoinMessage =
-                    new Message(endpoint, new JoinMessage(this.loadFactor, this.commandFilter, order, expectReply));
+                    new ObjectMessage(endpoint, new JoinMessage(this.loadFactor, this.commandFilter, order, expectReply));
             returnJoinMessage.setFlag(Message.Flag.OOB);
             channel.send(returnJoinMessage);
         } catch (Exception e) {

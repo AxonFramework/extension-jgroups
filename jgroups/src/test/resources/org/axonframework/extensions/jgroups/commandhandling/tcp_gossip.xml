@@ -15,7 +15,7 @@
          sock_conn_timeout="300"/>
     <TCPGOSSIP initial_hosts="${jgroups.tunnel.gossip_router_hosts:127.0.0.1[12001]}" reconnect_interval="500"/>
     <MERGE3/>
-    <FD/>
+    <FD_ALL/>
     <VERIFY_SUSPECT/>
     <pbcast.NAKACK2 use_mcast_xmit="false"/>
     <UNICAST3/>
