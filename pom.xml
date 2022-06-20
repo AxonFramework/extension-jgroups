@@ -50,7 +50,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <axon.version>4.5.10</axon.version>
+        <axon.version>4.5.11</axon.version>
         <jgroups.version>4.2.21.Final</jgroups.version>
 
         <spring.version>5.3.21</spring.version>
