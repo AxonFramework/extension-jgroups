@@ -10,8 +10,7 @@ updates:
     - "Priority 1: Must"
     - "Status: In Progress"
   reviewers:
-    - "YvonneCeelie" # Main
-    - "sandjelkovic"
+    - "smcvb" # Main
   milestone: 7
 - package-ecosystem: maven
   directory: "/"
@@ -23,6 +22,5 @@ updates:
     - "Priority 1: Must"
     - "Status: In Progress"
   reviewers:
-    - "YvonneCeelie" # Main
-    - "sandjelkovic"
+    - "smcvb" # Main
   milestone: 7
