@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2018. Axon Framework
+ * Copyright (c) 2010-2023. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -406,8 +406,6 @@ public class JGroupsConnectorTest {
         Exception failureResponse = new MockException("This cannot be serialized");
         when(serializer.serialize(successResponse, byte[].class)).thenThrow(new SerializationException(
                 "cannot serialize success"));
-        when(serializer.serialize(failureResponse, byte[].class)).thenThrow(new SerializationException(
-                "cannot serialize failure"));
 
         connector1 = JGroupsConnector.builder()
                                      .localSegment(mockCommandBus1)
