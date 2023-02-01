@@ -11,7 +11,7 @@ updates:
     - "Status: In Progress"
   reviewers:
     - "smcvb" # Main
-  milestone: 7
+  milestone: 8
 - package-ecosystem: maven
   directory: "/"
   schedule:
@@ -23,4 +23,4 @@ updates:
     - "Status: In Progress"
   reviewers:
     - "smcvb" # Main
-  milestone: 7
+  milestone: 8
