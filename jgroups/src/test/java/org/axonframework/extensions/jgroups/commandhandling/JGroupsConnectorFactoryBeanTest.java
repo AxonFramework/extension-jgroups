@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2010-2016. Axon Framework
+ * Copyright (c) 2010-2023. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,26 +23,28 @@ import org.axonframework.commandhandling.distributed.RoutingStrategy;
 import org.axonframework.extensions.jgroups.commandhandling.utils.TestSerializer;
 import org.axonframework.serialization.Serializer;
 import org.jgroups.JChannel;
-import org.junit.*;
+import org.junit.jupiter.api.*;
 import org.springframework.context.ApplicationContext;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 /**
+ * Test class validating the {@link JGroupsConnectorFactoryBean}.
+ *
  * @author Allard Buijze
  */
-public class JGroupsConnectorFactoryBeanTest {
+class JGroupsConnectorFactoryBeanTest {
 
     private ConnectorInstantiationExposingFactoryBean testSubject;
+
     private ApplicationContext mockApplicationContext;
     private JChannel mockChannel;
     private JGroupsConnector mockConnector;
+    private final Serializer serializer = TestSerializer.xStreamSerializer();
 
-    Serializer serializer = TestSerializer.xStreamSerializer();
-
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         mockApplicationContext = mock(ApplicationContext.class);
         mockChannel = mock(JChannel.class);
         mockConnector = mock(JGroupsConnector.class);
@@ -54,9 +56,10 @@ public class JGroupsConnectorFactoryBeanTest {
     }
 
     @Test
-    public void testCreateWithDefaultValues() throws Exception {
+    void createWithDefaultValues() throws Exception {
         testSubject.afterPropertiesSet();
         testSubject.start();
+        //noinspection ResultOfMethodCallIgnored
         testSubject.getObject();
 
         verify(testSubject).instantiateConnector(
@@ -75,16 +78,17 @@ public class JGroupsConnectorFactoryBeanTest {
     }
 
     @Test
-    public void testCreateWithSpecifiedValues() throws Exception {
+    void createWithSpecifiedValues() throws Exception {
         testSubject.setClusterName("ClusterName");
         testSubject.setSerializer(serializer);
         SimpleCommandBus localSegment = SimpleCommandBus.builder().build();
         testSubject.setLocalSegment(localSegment);
         RoutingStrategy routingStrategy = CommandMessage::getCommandName;
         testSubject.setRoutingStrategy(routingStrategy);
-        testSubject.setChannelName("localname");
+        testSubject.setChannelName("localName");
         testSubject.afterPropertiesSet();
         testSubject.start();
+        //noinspection ResultOfMethodCallIgnored
         testSubject.getObject();
 
         verify(testSubject).instantiateConnector(
@@ -94,7 +98,7 @@ public class JGroupsConnectorFactoryBeanTest {
                 same(serializer),
                 same(routingStrategy));
         verify(mockApplicationContext, never()).getBean(Serializer.class);
-        verify(mockChannel).setName("localname");
+        verify(mockChannel).setName("localName");
         verify(mockConnector).connect();
         verify(mockChannel, never()).close();
 
@@ -105,7 +109,7 @@ public class JGroupsConnectorFactoryBeanTest {
     }
 
     @Test
-    public void testCreateWithCustomConfigurationFile() {
+    void createWithCustomConfigurationFile() {
         testSubject.setConfiguration("does-not-exist");
         testSubject.setClusterName("ClusterName");
         testSubject.setSerializer(serializer);
@@ -113,7 +117,7 @@ public class JGroupsConnectorFactoryBeanTest {
         testSubject.setLocalSegment(localSegment);
         RoutingStrategy routingStrategy = CommandMessage::getCommandName;
         testSubject.setRoutingStrategy(routingStrategy);
-        testSubject.setChannelName("localname");
+        testSubject.setChannelName("localName");
         try {
             testSubject.afterPropertiesSet();
             fail("Expected a failed attempt to load inexistent settings");
@@ -123,7 +127,7 @@ public class JGroupsConnectorFactoryBeanTest {
     }
 
     @Test
-    public void testSimpleProperties() {
+    void simpleProperties() {
         assertEquals(Integer.MAX_VALUE, testSubject.getPhase());
         testSubject.setPhase(100);
         assertEquals(100, testSubject.getPhase());
