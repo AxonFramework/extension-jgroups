@@ -24,10 +24,13 @@ import org.axonframework.commandhandling.distributed.DistributedCommandBus;
 import org.axonframework.messaging.GenericMessage;
 import org.axonframework.messaging.Message;
 import org.axonframework.messaging.ResultMessage;
+import org.axonframework.tracing.SpanFactory;
+import org.axonframework.tracing.TestSpanFactory;
 import org.jgroups.stack.GossipRouter;
 import org.junit.jupiter.api.*;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.EnableMBeanExport;
 import org.springframework.jmx.support.RegistrationPolicy;
 import org.springframework.test.context.ContextConfiguration;
@@ -62,6 +65,8 @@ class DistributedCommandBusIntegrationTest {
                     assertNotNull(commandBus);
                     subscribeCommandHandler(commandBus);
                     executeCommand(commandBus);
+                    SpanFactory spanFactory = context.getBean(SpanFactory.class);
+                    verifySpans(spanFactory);
                 });
     }
 
@@ -82,6 +87,7 @@ class DistributedCommandBusIntegrationTest {
         commandBus.subscribe("testCommand", e -> "correct");
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
     private void executeCommand(DistributedCommandBus commandBus) {
         Message message = new GenericMessage("hi");
         CommandMessage command = new GenericCommandMessage(message, "testCommand");
@@ -105,6 +111,7 @@ class DistributedCommandBusIntegrationTest {
         assertEquals("correct", result.get().getPayload());
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
     private void executeCommandWhileNotRegistered(DistributedCommandBus commandBus) {
         Message message = new GenericMessage("hi");
         CommandMessage command = new GenericCommandMessage(message, "anotherCommand");
@@ -116,10 +123,21 @@ class DistributedCommandBusIntegrationTest {
         assertTrue(result.get() instanceof NoHandlerForCommandException);
     }
 
+    private void verifySpans(SpanFactory spanFactory) {
+        assertTrue(spanFactory instanceof TestSpanFactory);
+        TestSpanFactory testSpanFactory = (TestSpanFactory) spanFactory;
+        testSpanFactory.verifySpanCompleted("DistributedCommandBus.dispatch");
+        testSpanFactory.verifySpanCompleted("JGroupsConnector.processDispatchMessage");
+    }
+
     @ContextConfiguration
     @EnableAutoConfiguration
     @EnableMBeanExport(registration = RegistrationPolicy.IGNORE_EXISTING)
     public static class DefaultContext {
 
+        @Bean
+        public SpanFactory spanFactory() {
+            return new TestSpanFactory();
+        }
     }
 }

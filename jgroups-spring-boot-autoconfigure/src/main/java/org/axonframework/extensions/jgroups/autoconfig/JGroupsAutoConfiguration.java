@@ -26,6 +26,7 @@ import org.axonframework.extensions.jgroups.DistributedCommandBusProperties;
 import org.axonframework.extensions.jgroups.commandhandling.JGroupsConnectorFactoryBean;
 import org.axonframework.serialization.Serializer;
 import org.axonframework.springboot.autoconfig.InfraConfiguration;
+import org.axonframework.tracing.SpanFactory;
 import org.jgroups.stack.GossipRouter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,7 +89,9 @@ public class JGroupsAutoConfiguration {
             @Qualifier("messageSerializer") Serializer messageSerializer,
             @Qualifier("localSegment") CommandBus localSegment,
             RoutingStrategy routingStrategy,
-            @Autowired(required = false) ConsistentHashChangeListener consistentHashChangeListener) {
+            @Autowired(required = false) ConsistentHashChangeListener consistentHashChangeListener,
+            SpanFactory spanFactory
+    ) {
         System.setProperty("jgroups.tunnel.gossip_router_hosts", properties.getJgroups().getGossip().getHosts());
         System.setProperty("jgroups.bind_addr", String.valueOf(properties.getJgroups().getBindAddr()));
         System.setProperty("jgroups.bind_port", String.valueOf(properties.getJgroups().getBindPort()));
@@ -102,6 +105,7 @@ public class JGroupsAutoConfiguration {
             jGroupsConnectorFactoryBean.setConsistentHashChangeListener(consistentHashChangeListener);
         }
         jGroupsConnectorFactoryBean.setRoutingStrategy(routingStrategy);
+        jGroupsConnectorFactoryBean.setSpanFactory(spanFactory);
         return jGroupsConnectorFactoryBean;
     }
 
@@ -109,12 +113,16 @@ public class JGroupsAutoConfiguration {
     @Primary
     @ConditionalOnBean(CommandBusConnector.class)
     @ConditionalOnMissingBean
-    public DistributedCommandBus distributedCommandBus(CommandRouter commandRouter,
-                                                       CommandBusConnector commandBusConnector,
-                                                       DistributedCommandBusProperties distributedCommandBusProperties) {
+    public DistributedCommandBus distributedCommandBus(
+            CommandRouter commandRouter,
+            CommandBusConnector commandBusConnector,
+            DistributedCommandBusProperties distributedCommandBusProperties,
+            SpanFactory spanFactory
+    ) {
         DistributedCommandBus commandBus = DistributedCommandBus.builder()
                                                                 .commandRouter(commandRouter)
                                                                 .connector(commandBusConnector)
+                                                                .spanFactory(spanFactory)
                                                                 .build();
         commandBus.updateLoadFactor(distributedCommandBusProperties.getLoadFactor());
         return commandBus;
