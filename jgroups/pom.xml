@@ -58,6 +58,14 @@
             <artifactId>jsr305</artifactId>
             <scope>provided</scope>
         </dependency>
+        <!-- To get the TestSpanFactory -->
+        <dependency>
+            <groupId>org.axonframework</groupId>
+            <artifactId>axon-messaging</artifactId>
+            <classifier>tests</classifier>
+            <version>${axon.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
