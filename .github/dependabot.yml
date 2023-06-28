@@ -10,7 +10,7 @@ updates:
     - "Priority 1: Must"
   reviewers:
     - "smcvb" # Main
-  milestone: 8
+  milestone: 9
 - package-ecosystem: maven
   directory: "/"
   schedule:
@@ -21,4 +21,4 @@ updates:
     - "Priority 1: Must"
   reviewers:
     - "smcvb" # Main
-  milestone: 8
+  milestone: 9
