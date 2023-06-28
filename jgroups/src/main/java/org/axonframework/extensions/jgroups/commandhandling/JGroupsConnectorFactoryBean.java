@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2010-2018. Axon Framework
+ * Copyright (c) 2010-2023. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,6 +24,8 @@ import org.axonframework.commandhandling.distributed.ConsistentHashChangeListene
 import org.axonframework.commandhandling.distributed.RoutingStrategy;
 import org.axonframework.messaging.MessageHandlerInterceptor;
 import org.axonframework.serialization.Serializer;
+import org.axonframework.tracing.NoOpSpanFactory;
+import org.axonframework.tracing.SpanFactory;
 import org.jgroups.JChannel;
 import org.jgroups.util.Util;
 import org.springframework.beans.factory.BeanNameAware;
@@ -35,6 +37,7 @@ import org.springframework.context.SmartLifecycle;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import javax.annotation.Nonnull;
 
 /**
  * Spring Factory bean that creates a JGroupsConnector and starts it when the application context is started. This bean
@@ -60,6 +63,7 @@ public class JGroupsConnectorFactoryBean implements FactoryBean<JGroupsConnector
     private long joinTimeout = -1;
     private boolean registerMBean = false;
     private RoutingStrategy routingStrategy = new AnnotationRoutingStrategy();
+    private SpanFactory spanFactory = NoOpSpanFactory.INSTANCE;
     private ConsistentHashChangeListener consistentHashChangeListener = newConsistentHash -> {/* noop*/};
 
     @Override
@@ -107,7 +111,9 @@ public class JGroupsConnectorFactoryBean implements FactoryBean<JGroupsConnector
                                .clusterName(clusterName)
                                .serializer(serializer)
                                .routingStrategy(routingStrategy)
-                               .consistentHashChangeListener(consistentHashChangeListener).build();
+                               .consistentHashChangeListener(consistentHashChangeListener)
+                               .spanFactory(spanFactory)
+                               .build();
     }
 
     /**
@@ -118,18 +124,18 @@ public class JGroupsConnectorFactoryBean implements FactoryBean<JGroupsConnector
      *
      * @param serializer the serializer to serialize commands with
      */
-    public void setSerializer(Serializer serializer) {
+    public void setSerializer(@Nonnull Serializer serializer) {
         this.serializer = serializer;
     }
 
     /**
      * Sets the JGroups configuration file to load. Defaults to configuration using TCP with multicast discovery
-     * (tcp_mcast.xml). Alternatively the JChannel can be instantiated programatically by setting the {@link
-     * #setChannelFactory JChannelFactory}.
+     * (tcp_mcast.xml). Alternatively the JChannel can be instantiated programatically by setting the
+     * {@link #setChannelFactory JChannelFactory}.
      *
      * @param configuration the JGroups configuration file
      */
-    public void setConfiguration(String configuration) {
+    public void setConfiguration(@Nonnull String configuration) {
         this.channelFactory = new JGroupsXmlConfigurationChannelFactory(configuration);
     }
 
@@ -139,8 +145,17 @@ public class JGroupsConnectorFactoryBean implements FactoryBean<JGroupsConnector
      *
      * @param routingStrategy the routing strategy of the connector
      */
-    public void setRoutingStrategy(RoutingStrategy routingStrategy) {
+    public void setRoutingStrategy(@Nonnull RoutingStrategy routingStrategy) {
         this.routingStrategy = routingStrategy;
+    }
+
+    /**
+     * Sets the {@link org.axonframework.tracing.SpanFactory} that the JGroupsConnector will use to create spans.
+     *
+     * @param spanFactory the span factory of the connector
+     */
+    public void setSpanFactory(@Nonnull SpanFactory spanFactory) {
+        this.spanFactory = spanFactory;
     }
 
     /**
@@ -148,7 +163,7 @@ public class JGroupsConnectorFactoryBean implements FactoryBean<JGroupsConnector
      *
      * @param channelFactory The factory that creates the JChannel
      */
-    public void setChannelFactory(JChannelFactory channelFactory) {
+    public void setChannelFactory(@Nonnull JChannelFactory channelFactory) {
         this.channelFactory = channelFactory;
     }
 
@@ -158,7 +173,7 @@ public class JGroupsConnectorFactoryBean implements FactoryBean<JGroupsConnector
      *
      * @param clusterName The name of the cluster to connect to
      */
-    public void setClusterName(String clusterName) {
+    public void setClusterName(@Nonnull String clusterName) {
         this.clusterName = clusterName;
     }
 
@@ -169,7 +184,7 @@ public class JGroupsConnectorFactoryBean implements FactoryBean<JGroupsConnector
      *
      * @param channelName The logical name to give to the channel
      */
-    public void setChannelName(String channelName) {
+    public void setChannelName(@Nonnull String channelName) {
         this.channelName = channelName;
     }
 

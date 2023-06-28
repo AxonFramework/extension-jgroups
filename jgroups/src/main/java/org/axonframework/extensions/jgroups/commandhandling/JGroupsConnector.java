@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2018. Axon Framework
+ * Copyright (c) 2010-2023. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,10 @@ import org.axonframework.lifecycle.ShutdownLatch;
 import org.axonframework.messaging.MessageHandler;
 import org.axonframework.messaging.MessageHandlerInterceptor;
 import org.axonframework.serialization.Serializer;
+import org.axonframework.tracing.NoOpSpanFactory;
+import org.axonframework.tracing.Span;
+import org.axonframework.tracing.SpanFactory;
+import org.axonframework.tracing.SpanScope;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
@@ -64,6 +68,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
+
+import javax.annotation.Nonnull;
 
 import static java.util.Arrays.stream;
 import static org.axonframework.commandhandling.GenericCommandResultMessage.asCommandResultMessage;
@@ -99,7 +105,7 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
     private final ConsistentHashChangeListener consistentHashChangeListener;
     private ExecutorService executorService;
     private final boolean executorProvided;
-
+    private final SpanFactory spanFactory;
     private final ShutdownLatch shutdownLatch = new ShutdownLatch();
     private final Map<String, ShutdownLatch.ActivityHandle> pendingCommands = new ConcurrentHashMap<>();
     private final CommandCallbackRepository<Address> callbackRepository = new CommandCallbackRepository<>();
@@ -137,16 +143,17 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
             this.executorService = executorService;
             this.executorProvided = true;
         }
+        this.spanFactory = builder.spanFactory;
     }
 
     /**
      * Instantiate a Builder to be able to create a {@link JGroupsConnector}.
      * <p>
-     * The {@link RoutingStrategy} is defaulted to an {@link AnnotationRoutingStrategy}, and the {@link
-     * ConsistentHashChangeListener} to a no-op solution. The {@link ExecutorService} is defaulted to an {@link
-     * Executors#newCachedThreadPool}, using an {@link AxonThreadFactory} to create threads. The {@link CommandBus},
-     * {@link JChannel}, {@code clusterName} and {@link Serializer} are <b>hard requirements</b> and as such should be
-     * provided.
+     * The {@link RoutingStrategy} is defaulted to an {@link AnnotationRoutingStrategy}, and the
+     * {@link ConsistentHashChangeListener} to a no-op solution. The {@link ExecutorService} is defaulted to an
+     * {@link Executors#newCachedThreadPool}, using an {@link AxonThreadFactory} to create threads. The
+     * {@link SpanFactory} is defaulted to an {@link NoOpSpanFactory}. The {@link CommandBus}, {@link JChannel},
+     * {@code clusterName} and {@link Serializer} are <b>hard requirements</b> and as such should be provided.
      *
      * @return a Builder to be able to create a {@link JGroupsConnector}
      */
@@ -331,23 +338,40 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
     }
 
     private <C, R> void processDispatchMessage(Message msg, JGroupsDispatchMessage message) {
+        CommandMessage<C> commandMessage;
+        try {
+            //noinspection unchecked
+            commandMessage = (CommandMessage<C>) message.getCommandMessage(serializer);
+        } catch (Exception e) {
+            if (message.isExpectReply()) {
+                sendReply(msg.getSrc(), message.getCommandIdentifier(), asCommandResultMessage(e));
+            } else {
+                logger.error("Could not dispatch command", e);
+            }
+            return;
+        }
+        Span span = spanFactory.createChildHandlerSpan(() -> "JGroupsConnector.processDispatchMessage", commandMessage)
+                               .start();
         if (message.isExpectReply()) {
-            try {
-                //noinspection rawtypes
-                CommandMessage commandMessage = message.getCommandMessage(serializer);
-                //noinspection unchecked
+            try (SpanScope ignored = span.makeCurrent()) {
                 localSegment.dispatch(commandMessage,
                                       (CommandCallback<C, R>) (cm, commandResultMessage) -> sendReply(msg.getSrc(),
                                                                                                       message.getCommandIdentifier(),
                                                                                                       commandResultMessage));
             } catch (Exception e) {
                 sendReply(msg.getSrc(), message.getCommandIdentifier(), asCommandResultMessage(e));
+                span.recordException(e);
+            } finally {
+                span.end();
             }
         } else {
-            try {
-                localSegment.dispatch(message.getCommandMessage(serializer));
+            try (SpanScope ignored = span.makeCurrent()) {
+                localSegment.dispatch(commandMessage);
             } catch (Exception e) {
                 logger.error("Could not dispatch command", e);
+                span.recordException(e);
+            } finally {
+                span.end();
             }
         }
     }
@@ -532,10 +556,10 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
     }
 
     /**
-     * Builder class to instantiate a {@link JGroupsConnector}. The {@link RoutingStrategy} is defaulted to an {@link
-     * AnnotationRoutingStrategy}, and the {@link ConsistentHashChangeListener} to a no-op solution. The {@link
-     * CommandBus}, {@link JChannel}, {@code clusterName} and {@link Serializer} are a <b>hard requirements</b> and as
-     * such should be provided.
+     * Builder class to instantiate a {@link JGroupsConnector}. The {@link RoutingStrategy} is defaulted to an
+     * {@link AnnotationRoutingStrategy}, and the {@link ConsistentHashChangeListener} to a no-op solution. The
+     * {@link SpanFactory} is defaulted to an {@link NoOpSpanFactory}. The {@link CommandBus}, {@link JChannel},
+     * {@code clusterName} and {@link Serializer} are a <b>hard requirements</b> and as such should be provided.
      */
     public static class Builder {
 
@@ -546,6 +570,7 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
         private RoutingStrategy routingStrategy = new AnnotationRoutingStrategy();
         private ConsistentHashChangeListener consistentHashChangeListener = ConsistentHashChangeListener.noOp();
         private ExecutorService executorService;
+        private SpanFactory spanFactory = NoOpSpanFactory.INSTANCE;
 
         /**
          * Sets the {@code localSegment} of type {@link CommandBus} commands on the local node.
@@ -553,7 +578,7 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
          * @param localSegment the {@code localSegment} of type {@link CommandBus} commands on the local node
          * @return the current Builder instance, for fluent interfacing
          */
-        public Builder localSegment(CommandBus localSegment) {
+        public Builder localSegment(@Nonnull CommandBus localSegment) {
             assertNonNull(localSegment, "The localSegment may not be null");
             this.localSegment = localSegment;
             return this;
@@ -565,7 +590,7 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
          * @param channel the {@code channel} of type {@link JChannel} used to connect between nodes
          * @return the current Builder instance, for fluent interfacing
          */
-        public Builder channel(JChannel channel) {
+        public Builder channel(@Nonnull JChannel channel) {
             assertNonNull(channel, "JChannel may not be null");
             this.channel = channel;
             return this;
@@ -577,7 +602,7 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
          * @param clusterName the {@code clusterName} to which nodes can connect to each other
          * @return the current Builder instance, for fluent interfacing
          */
-        public Builder clusterName(String clusterName) {
+        public Builder clusterName(@Nonnull String clusterName) {
             assertClusterName(clusterName, "The clusterName may not be null or empty");
             this.clusterName = clusterName;
             return this;
@@ -589,7 +614,7 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
          * @param serializer the {@link Serializer} used to serialize command messages when they are sent between nodes
          * @return the current Builder instance, for fluent interfacing
          */
-        public Builder serializer(Serializer serializer) {
+        public Builder serializer(@Nonnull Serializer serializer) {
             assertNonNull(serializer, "Serializer may not be null");
             this.serializer = serializer;
             return this;
@@ -597,14 +622,14 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
 
         /**
          * Sets the {@link RoutingStrategy} used to define the key based on which Command Messages are routed to their
-         * respective handler nodes. Defaults to a {@link AnnotationRoutingStrategy}, which searches for the {@link
-         * org.axonframework.commandhandling.RoutingKey} annotated field as the routing key.
+         * respective handler nodes. Defaults to a {@link AnnotationRoutingStrategy}, which searches for the
+         * {@link org.axonframework.commandhandling.RoutingKey} annotated field as the routing key.
          *
          * @param routingStrategy the {@link RoutingStrategy} used to define the key based on which Command Messages are
          *                        routed to their respective handler nodes
          * @return the current Builder instance, for fluent interfacing
          */
-        public Builder routingStrategy(RoutingStrategy routingStrategy) {
+        public Builder routingStrategy(@Nonnull RoutingStrategy routingStrategy) {
             assertNonNull(routingStrategy, "RoutingStrategy may not be null");
             this.routingStrategy = routingStrategy;
             return this;
@@ -619,7 +644,8 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
          *                                     hash
          * @return the current Builder instance, for fluent interfacing
          */
-        public Builder consistentHashChangeListener(ConsistentHashChangeListener consistentHashChangeListener) {
+        public Builder consistentHashChangeListener(
+                @Nonnull ConsistentHashChangeListener consistentHashChangeListener) {
             assertNonNull(consistentHashChangeListener, "ConsistentHashChangeListener may not be null");
             this.consistentHashChangeListener = consistentHashChangeListener;
             return this;
@@ -638,6 +664,19 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
         @SuppressWarnings("unused")
         public Builder executorService(ExecutorService executorService) {
             this.executorService = executorService;
+            return this;
+        }
+
+        /**
+         * Sets the {@link SpanFactory} implementation to use for providing tracing capabilities. Defaults to a
+         * {@link NoOpSpanFactory} by default, which provides no tracing capabilities.
+         *
+         * @param spanFactory The {@link SpanFactory} implementation.
+         * @return The current Builder instance, for fluent interfacing.
+         */
+        public Builder spanFactory(@Nonnull SpanFactory spanFactory) {
+            assertNonNull(spanFactory, "SpanFactory may not be null");
+            this.spanFactory = spanFactory;
             return this;
         }
 

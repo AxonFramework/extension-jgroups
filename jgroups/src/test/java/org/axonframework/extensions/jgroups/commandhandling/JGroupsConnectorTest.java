@@ -37,6 +37,7 @@ import org.axonframework.messaging.GenericMessage;
 import org.axonframework.messaging.MessageHandler;
 import org.axonframework.serialization.SerializationException;
 import org.axonframework.serialization.Serializer;
+import org.axonframework.tracing.TestSpanFactory;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
@@ -79,6 +80,8 @@ class JGroupsConnectorTest {
     private RoutingStrategy routingStrategy;
     private Serializer serializer = TestSerializer.xStreamSerializer();
 
+    private TestSpanFactory testSpanFactory;
+
     private static void closeSilently(JChannel channel) {
         try {
             channel.close();
@@ -99,12 +102,14 @@ class JGroupsConnectorTest {
         mockCommandBus1 = spy(SimpleCommandBus.builder().build());
         mockCommandBus2 = spy(SimpleCommandBus.builder().build());
         clusterName = "test-" + new Random().nextInt(Integer.MAX_VALUE);
+        testSpanFactory = new TestSpanFactory();
         connector1 = JGroupsConnector.builder()
                                      .localSegment(mockCommandBus1)
                                      .channel(channel1)
                                      .clusterName(clusterName)
                                      .routingStrategy(routingStrategy)
                                      .serializer(serializer)
+                                     .spanFactory(testSpanFactory)
                                      .build();
         connector2 = JGroupsConnector.builder()
                                      .localSegment(mockCommandBus2)
@@ -112,6 +117,7 @@ class JGroupsConnectorTest {
                                      .clusterName(clusterName)
                                      .routingStrategy(routingStrategy)
                                      .serializer(serializer)
+                                     .spanFactory(testSpanFactory)
                                      .build();
 
         distributedCommandBus1 = DistributedCommandBus.builder()
@@ -484,6 +490,22 @@ class JGroupsConnectorTest {
         assertEquals(100, counter1.get() + counter2.get());
         verify(mockCommandBus1, times(34)).dispatch(any(CommandMessage.class), isA(CommandCallback.class));
         verify(mockCommandBus2, times(66)).dispatch(any(CommandMessage.class), isA(CommandCallback.class));
+    }
+
+    @Test
+    void spanIsSetAndClosedWhenThereIsNoCallback() throws Exception {
+        final AtomicInteger counter = new AtomicInteger(0);
+
+        distributedCommandBus1.subscribe("myCommand1", new CountingCommandHandler(counter));
+        connector1.connect();
+        assertTrue(connector1.awaitJoined(10, TimeUnit.SECONDS), "Expected connector 1 to connect within 10 seconds");
+
+        GenericCommandMessage<String> command = new GenericCommandMessage<>(new GenericMessage<>("message"),
+                                                                            "myCommand1");
+        connector1.send(connector1.findDestination(command).get(), command);
+
+        await().untilAsserted(() -> assertEquals(1, counter.get()));
+        testSpanFactory.verifySpanCompleted("JGroupsConnector.processDispatchMessage");
     }
 
     private void waitForConnectorSync() {
