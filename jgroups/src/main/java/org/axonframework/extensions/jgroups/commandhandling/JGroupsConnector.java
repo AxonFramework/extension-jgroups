@@ -149,11 +149,11 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
     /**
      * Instantiate a Builder to be able to create a {@link JGroupsConnector}.
      * <p>
-     * The {@link RoutingStrategy} is defaulted to an {@link AnnotationRoutingStrategy}, and the {@link
-     * ConsistentHashChangeListener} to a no-op solution. The {@link ExecutorService} is defaulted to an {@link
-     * Executors#newCachedThreadPool}, using an {@link AxonThreadFactory} to create threads. The {@link CommandBus},
-     * {@link JChannel}, {@code clusterName} and {@link Serializer} are <b>hard requirements</b> and as such should be
-     * provided.
+     * The {@link RoutingStrategy} is defaulted to an {@link AnnotationRoutingStrategy}, and the
+     * {@link ConsistentHashChangeListener} to a no-op solution. The {@link ExecutorService} is defaulted to an
+     * {@link Executors#newCachedThreadPool}, using an {@link AxonThreadFactory} to create threads. The
+     * {@link SpanFactory} is defaulted to an {@link NoOpSpanFactory}. The {@link CommandBus}, {@link JChannel},
+     * {@code clusterName} and {@link Serializer} are <b>hard requirements</b> and as such should be provided.
      *
      * @return a Builder to be able to create a {@link JGroupsConnector}
      */
@@ -556,10 +556,10 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
     }
 
     /**
-     * Builder class to instantiate a {@link JGroupsConnector}. The {@link RoutingStrategy} is defaulted to an {@link
-     * AnnotationRoutingStrategy}, and the {@link ConsistentHashChangeListener} to a no-op solution. The {@link
-     * CommandBus}, {@link JChannel}, {@code clusterName} and {@link Serializer} are a <b>hard requirements</b> and as
-     * such should be provided.
+     * Builder class to instantiate a {@link JGroupsConnector}. The {@link RoutingStrategy} is defaulted to an
+     * {@link AnnotationRoutingStrategy}, and the {@link ConsistentHashChangeListener} to a no-op solution. The
+     * {@link SpanFactory} is defaulted to an {@link NoOpSpanFactory}. The {@link CommandBus}, {@link JChannel},
+     * {@code clusterName} and {@link Serializer} are a <b>hard requirements</b> and as such should be provided.
      */
     public static class Builder {
 
