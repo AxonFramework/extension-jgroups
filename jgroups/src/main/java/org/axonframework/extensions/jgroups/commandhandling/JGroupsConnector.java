@@ -338,10 +338,10 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
     }
 
     private <C, R> void processDispatchMessage(Message msg, JGroupsDispatchMessage message) {
-        //noinspection rawtypes
-        CommandMessage commandMessage;
+        CommandMessage<C> commandMessage;
         try {
-            commandMessage = message.getCommandMessage(serializer);
+            //noinspection unchecked
+            commandMessage = (CommandMessage<C>) message.getCommandMessage(serializer);
         } catch (Exception e) {
             if (message.isExpectReply()) {
                 sendReply(msg.getSrc(), message.getCommandIdentifier(), asCommandResultMessage(e));
@@ -350,11 +350,10 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
             }
             return;
         }
-        Span span = spanFactory.createDispatchSpan(() -> "JGroupsConnector.processDispatchMessage", commandMessage)
+        Span span = spanFactory.createChildHandlerSpan(() -> "JGroupsConnector.processDispatchMessage", commandMessage)
                                .start();
         if (message.isExpectReply()) {
             try (SpanScope ignored = span.makeCurrent()) {
-                //noinspection unchecked
                 localSegment.dispatch(commandMessage,
                                       (CommandCallback<C, R>) (cm, commandResultMessage) -> sendReply(msg.getSrc(),
                                                                                                       message.getCommandIdentifier(),
@@ -367,7 +366,6 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
             }
         } else {
             try (SpanScope ignored = span.makeCurrent()) {
-                //noinspection unchecked
                 localSegment.dispatch(commandMessage);
             } catch (Exception e) {
                 logger.error("Could not dispatch command", e);
