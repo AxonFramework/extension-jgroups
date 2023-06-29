@@ -30,14 +30,14 @@
     <modelVersion>4.0.0</modelVersion>
 
     <name>Axon Framework - JGroups Extension</name>
-    <description>An Axon Framework extension enabling JGroups integration.</description>
+    <description>An Axon Framework extension providing JGroups integration.</description>
 
     <inceptionYear>2010</inceptionYear>
-    <url>http://www.axonframework.org</url>
+    <url>https://axoniq.io/</url>
     <licenses>
         <license>
             <name>Apache 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
         </license>
     </licenses>
     <issueManagement>
@@ -86,6 +86,7 @@
     </properties>
 
     <dependencies>
+        <!-- Testing -->
         <dependency>
             <groupId>org.awaitility</groupId>
             <artifactId>awaitility</artifactId>
@@ -169,7 +170,7 @@
         </dependency>
 
         <dependency>
-            <!-- Not pat of Java 9 by default. Adding it as a dependency makes it compatible with Java 8 -->
+            <!-- Not part of Java 9 by default. Adding it as a dependency makes it compatible with Java 8 -->
             <groupId>javax.xml.bind</groupId>
             <artifactId>jaxb-api</artifactId>
             <version>${javax.jaxb-api.version}</version>
@@ -439,7 +440,6 @@
             <build>
                 <plugins>
                     <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
                         <version>${maven-gpg.version}</version>
                         <executions>
