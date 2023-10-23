@@ -53,18 +53,18 @@
         </sonar.coverage.jacoco.xmlReportPaths>
 
         <axon.version>4.9.0</axon.version>
-        <jgroups.version>4.2.22.Final</jgroups.version>
+        <jgroups.version>4.2.23.Final</jgroups.version>
 
-        <spring.version>5.3.29</spring.version>
-        <spring.boot.version>2.7.14</spring.boot.version>
+        <spring.version>5.3.30</spring.version>
+        <spring.boot.version>2.7.17</spring.boot.version>
 
-        <slf4j.version>2.0.7</slf4j.version>
-        <log4j.version>2.20.0</log4j.version>
+        <slf4j.version>2.0.9</slf4j.version>
+        <log4j.version>2.21.0</log4j.version>
 
         <findbugs-jsr305.version>3.0.2</findbugs-jsr305.version>
 
         <awaitility.version>4.2.0</awaitility.version>
-        <commons-io.version>2.13.0</commons-io.version>
+        <commons-io.version>2.14.0</commons-io.version>
         <javax.jaxb-api.version>2.3.1</javax.jaxb-api.version>
         <junit.jupiter.version>5.9.1</junit.jupiter.version>
         <mockito.version>4.11.0</mockito.version>
@@ -74,11 +74,11 @@
         <maven-clean.version>3.3.1</maven-clean.version>
         <maven-compiler.version>3.11.0</maven-compiler.version>
         <maven-deploy.version>3.0.0</maven-deploy.version>
-        <maven-enforcer.version>3.3.0</maven-enforcer.version>
+        <maven-enforcer.version>3.4.1</maven-enforcer.version>
         <maven-gpg.version>3.1.0</maven-gpg.version>
         <maven-install.version>3.1.1</maven-install.version>
         <maven-jar.version>3.3.0</maven-jar.version>
-        <maven-javadoc.version>3.5.0</maven-javadoc.version>
+        <maven-javadoc.version>3.6.0</maven-javadoc.version>
         <maven-release.version>3.0.1</maven-release.version>
         <maven-source.version>3.3.0</maven-source.version>
         <maven-surefire.version>2.22.2</maven-surefire.version>
