@@ -41,7 +41,7 @@
         <axon.version>4.9.0</axon.version>
         <testcoontainers.version>1.17.6</testcoontainers.version>
 
-        <jar-plugin.version>3.3.0</jar-plugin.version>
+        <jar-plugin.version>3.4.0</jar-plugin.version>
         <jacoco-maven.version>0.8.11</jacoco-maven.version>
     </properties>
 
