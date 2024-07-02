@@ -1,5 +1,5 @@
 name: jgroups_extension_old_ref
-title: Spring AMQP Extension Guide
+title: JGroups Extension Guide
 version: true
 prerelease: true
 start_page: ROOT:index.adoc
