@@ -6,7 +6,7 @@ start_page: ROOT:index.adoc
 
 asciidoc:
   attributes:
-    component_description: The JGroups AMQP Extension Guide from the former reference guide
+    component_description: The JGroups Extension Guide from the former reference guide
     type: guide
     group: axon-framework
 
