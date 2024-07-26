@@ -56,7 +56,7 @@
         <jgroups.version>4.2.28.Final</jgroups.version>
 
         <spring.version>5.3.37</spring.version>
-        <spring.boot.version>2.7.18</spring.boot.version>
+        <spring.boot.version>3.3.2</spring.boot.version>
 
         <slf4j.version>2.0.13</slf4j.version>
         <log4j.version>2.23.1</log4j.version>
@@ -67,7 +67,7 @@
         <commons-io.version>2.16.1</commons-io.version>
         <javax.jaxb-api.version>2.3.1</javax.jaxb-api.version>
         <junit.jupiter.version>5.10.1</junit.jupiter.version>
-        <mockito.version>4.11.0</mockito.version>
+        <mockito.version>5.11.0</mockito.version>
 
         <jacoco-maven.version>0.8.11</jacoco-maven.version>
         <maven-assembly.version>3.7.1</maven-assembly.version>
