@@ -4,7 +4,7 @@ This folder contains the docs related to the JGroups Extension for Axon Framewor
 
 The following are the current documentation sources (folders):
 
-- `extension-guide` : [The JGroups Extension Guide from the former reference guide](https://library.axoniq.io/jgroups_extension_guide/index.html)
+- `extension-guide` : [The JGroups Extension Guide](https://library.axoniq.io/jgroups_extension_guide/index.html)
 
 ## Contributing to the docs.
 
