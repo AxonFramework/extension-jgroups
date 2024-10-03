@@ -1,6 +1,6 @@
 site:
   title: Axon JGroups Extension docs PREVIEW
-  start_page: jgroups_extension_guide::index.adoc
+  start_page: jgroups-extension-reference::index.adoc
 
 content:
   sources:

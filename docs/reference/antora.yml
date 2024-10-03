@@ -1,0 +1,15 @@
+name: jgroups-extension-reference
+title: JGroups Extension Reference
+version: true
+prerelease: true
+start_page: ROOT:index.adoc
+
+
+asciidoc:
+  attributes:
+    component_description: Extension adding JGroups integration for command routing
+    type: extension-reference
+    group: axon-framework
+
+nav:
+  - modules/nav.adoc
