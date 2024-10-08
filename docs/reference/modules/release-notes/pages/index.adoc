@@ -1,12 +1,11 @@
 = Release notes JGroups extension
 :navtitle: Release notes
 
-You can find the release notes for the Jobrunr Pro Extension from version 4.10.0 onwards below.
+You can find the release notes for the Jobrunr Pro Extension for version 4.10.0 below.
 For earlier releases, please go to the link:https://legacydocs.axoniq.io/reference-guide/release-notes/rn-extensions/rn-jgroups[legacy documentation].
 
 == Release 4.10
 
-Upgrades the Jobrunr Pro Extension to be compatible with Axon Framework 4.10.0, and updates various dependencies.
+Upgrades the JGroups Extension to be compatible with Axon Framework 4.10.0, and updates various dependencies.
 
 See the link:https://github.com/AxonFramework/extension-jgroups/releases/tag/axon-jgroups-4.10.0[GitHub release notes] for an exhaustive list of all changes.
-The release notes of all patch releases can be found xref:jgroups-extension-reference:release-notes:4-10.adoc[here]
