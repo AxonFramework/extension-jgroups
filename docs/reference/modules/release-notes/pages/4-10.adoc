@@ -1,4 +1,4 @@
-== Release Notes JGroups Extension 4.10
+== Release notes JGroups extension 4.10
 :navtitle: 4.10
 
 

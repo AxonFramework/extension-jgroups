@@ -1,5 +1,5 @@
-= Release Notes JGroups Extension
-:navtitle: Release Notes
+= Release notes JGroups extension
+:navtitle: Release notes
 
 You can find the release notes for the Jobrunr Pro Extension from version 4.10.0 onwards below.
 For earlier releases, please go to the link:https://legacydocs.axoniq.io/reference-guide/release-notes/rn-extensions/rn-jgroups[legacy documentation].
