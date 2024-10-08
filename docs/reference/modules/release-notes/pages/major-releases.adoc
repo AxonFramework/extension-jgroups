@@ -1,0 +1,100 @@
+= Major Releases
+
+This page notes all enhancements and features that we have introduced to our major releases of the Axon JGroups Extension.
+
+[#_release_4_9]
+== Release 4.9
+
+Release 4.9.0 only consists out of dependency upgrades to tag along with recent developments.
+
+[#_release_4_8]
+== Release 4.8
+
+=== Features
+
+* Adding tracing  https://github.com/AxonFramework/extension-jgroups/pull/254[#254]
+* Enable tracing in JGroupsConnector with SpanFactory https://github.com/AxonFramework/extension-jgroups/issues/188[#188]
+
+=== Enhancements
+
+* Upgrade to JUnit 5 https://github.com/AxonFramework/extension-jgroups/pull/253[#253]
+* Fix coverage report. https://github.com/AxonFramework/extension-jgroups/pull/218[#218]
+* Migrate tests to JUnit 5 https://github.com/AxonFramework/extension-jgroups/issues/89[#89]
+
+=== Contributors
+
+We'd like to thank all the contributors who worked on this release!
+
+* https://github.com/gklijs[@gklijs]
+* https://github.com/smcvb[@smcvb]
+
+[#_release_4_7]
+== Release 4.7
+
+=== Enhancements
+
+* Add support for Spring Boot 3 autoconfiguration. https://github.com/AxonFramework/extension-jgroups/pull/217[#217]
+
+=== Contributors
+
+We'd like to thank all the contributors who worked on this release!
+
+* https://github.com/gklijs[@gklijs]
+
+[#_release_4_6]
+== Release 4.6
+
+If you're curious about the dependency upgrades made in this release we refer to https://github.com/AxonFramework/extension-jgroups/releases/tag/axon-jgroups-4.6.0[this] page.
+
+=== Enhancements
+
+* Change how Sonar is invoked for GHA's https://github.com/AxonFramework/extension-jgroups/pull/97[#97]
+* Splitted builds into pr and not pr, added ghactions to dependabot and other minors https://github.com/AxonFramework/extension-jgroups/pull/75[#75]
+
+=== Contributors
+
+We'd like to thank all the contributors who worked on this release!
+
+* https://github.com/smcvb[@smcvb]
+* https://github.com/lfgcampos[@lfgcampos]
+* https://github.com/YvonneCeelie[@YvonneCeelie]
+
+[#_release_4_5]
+== Release 4.5
+
+* We added automatic release note construction through Git Workflow in issue https://github.com/AxonFramework/extension-jgroups/pull/32[#32].
+
+You can check the release note https://github.com/AxonFramework/extension-jgroups/releases/tag/axon-jgroups-4.5[here] for a complete list of all changes.
+
+[#_release_4_4]
+== Release 4.4
+
+* Issue https://github.com/AxonFramework/extension-jgroups/pull/9[#9] introduces support for Spring Boot Developer Tools.
+* We introduce dependabot, which updated the log4j version.
+
+[#_release_4_3]
+== Release 4.3
+
+* Issue https://github.com/AxonFramework/extension-jgroups/pull/7[#7] implements the `CommandBusConnector#localSegment`.
+Axon Framework introduces this method in release 4.3 (and issue https://github.com/AxonFramework/AxonFramework/issues/874[#874]) to ensure the usage of the ``DisruptorCommandBus``'s repository is followed when distributing the `CommandBus`.
+* We introduced a graceful start-up and shutdown solution in Axon Framework release 4.3 for all infrastructure components.
+Issue https://github.com/AxonFramework/extension-jgroups/pull/8[#8] ensures the `JGroupsConnector` complies with this style too.
+
+[#_release_4_2]
+== Release 4.2
+
+As marked under https://github.com/AxonFramework/extension-jgroups/issues/4[this] issue, the command callback will
+not be called if the connection between JGroups peers dies whilst a command is in transit.
+Credits go to "sgrimm-sg" for filing the issue and solving https://github.com/AxonFramework/extension-jgroups/pull/5[it].
+
+[#_release_4_1]
+== Release 4.1
+
+If cluster connection message came in quickly after starting the connection, a `NullPointerException` could be thrown.
+This issue was resolved for release 4.1 https://github.com/AxonFramework/extension-jgroups/issues/1[here].
+
+[#_release_4_0]
+== Release 4.0
+
+We split off the JGroups logic from Axon Framework core into a dedicated repository.
+Next to that, it complies with Axon Framework's 4.0 release.
