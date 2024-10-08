@@ -49,7 +49,7 @@ If you're curious about the dependency upgrades made in this release we refer to
 === Enhancements
 
 * Change how Sonar is invoked for GHA's https://github.com/AxonFramework/extension-jgroups/pull/97[#97]
-* Splitted builds into pr and not pr, added ghactions to dependabot and other minors https://github.com/AxonFramework/extension-jgroups/pull/75[#75]
+* Splitted builds into pr and not pr, added ghactions to Dependabot and other minors https://github.com/AxonFramework/extension-jgroups/pull/75[#75]
 
 === Contributors
 
@@ -70,7 +70,7 @@ You can check the release note https://github.com/AxonFramework/extension-jgroup
 == Release 4.4
 
 * Issue https://github.com/AxonFramework/extension-jgroups/pull/9[#9] introduces support for Spring Boot Developer Tools.
-* We introduce dependabot, which updated the log4j version.
+* We introduce Dependabot, which updated the log4j version.
 
 [#_release_4_3]
 == Release 4.3
