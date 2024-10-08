@@ -1,2 +1,6 @@
 * xref:ROOT:index.adoc[]
 ** xref:ROOT:springboot-config.adoc[]
+
+* xref:release-notes:index.adoc[]
+** xref:release-notes:major-releases.adoc[]
+** xref:release-notes:minor-releases.adoc[]
