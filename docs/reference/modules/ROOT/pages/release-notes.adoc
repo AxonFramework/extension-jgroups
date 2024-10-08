@@ -1,4 +1,4 @@
-= Release notes JGroups extension
+= Release Notes JGroups Extension
 :navtitle: Release notes
 
 You can find the release notes for the Jobrunr Pro Extension for version 4.10.0 below.
