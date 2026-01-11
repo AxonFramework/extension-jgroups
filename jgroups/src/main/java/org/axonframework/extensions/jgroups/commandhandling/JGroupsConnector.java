@@ -46,11 +46,7 @@ import org.axonframework.tracing.NoOpSpanFactory;
 import org.axonframework.tracing.Span;
 import org.axonframework.tracing.SpanFactory;
 import org.axonframework.tracing.SpanScope;
-import org.jgroups.Address;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
-import org.jgroups.Receiver;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -293,21 +289,6 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
     }
 
     @Override
-    public void suspect(Address suspectedMember) {
-        logger.warn("Member is suspect: {}", suspectedMember);
-    }
-
-    @Override
-    public void block() {
-        //We are not going to block
-    }
-
-    @Override
-    public void unblock() {
-        //We are not going to block
-    }
-
-    @Override
     public void receive(Message msg) {
         executorService.execute(() -> {
             Object message = msg.getObject();
@@ -444,7 +425,7 @@ public class JGroupsConnector implements CommandRouter, Receiver, CommandBusConn
         try {
             logger.info("Sending my configuration to {}.", getOrDefault(endpoint, "all nodes"));
             Message returnJoinMessage =
-                    new Message(endpoint, new JoinMessage(this.loadFactor, this.commandFilter, order, expectReply));
+                    new ObjectMessage(endpoint, new JoinMessage(this.loadFactor, this.commandFilter, order, expectReply));
             returnJoinMessage.setFlag(Message.Flag.OOB);
             channel.send(returnJoinMessage);
         } catch (Exception e) {

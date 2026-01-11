@@ -64,7 +64,7 @@ public class JGroupsAutoConfiguration {
 
     @ConditionalOnProperty("axon.distributed.jgroups.gossip.autoStart")
     @Bean(destroyMethod = "stop")
-    public GossipRouter gossipRouter() {
+    public GossipRouter gossipRouter() throws Exception {
         Matcher matcher =
                 Pattern.compile("([^[\\[]]*)\\[(\\d*)\\]").matcher(properties.getJgroups().getGossip().getHosts());
         if (matcher.find()) {
