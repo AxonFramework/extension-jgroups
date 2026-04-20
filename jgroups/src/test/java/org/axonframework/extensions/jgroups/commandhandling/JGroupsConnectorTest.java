@@ -41,6 +41,7 @@ import org.axonframework.tracing.TestSpanFactory;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
+import org.jgroups.ObjectMessage;
 import org.jgroups.stack.IpAddress;
 import org.junit.jupiter.api.*;
 
@@ -228,7 +229,7 @@ class JGroupsConnectorTest {
                                      .build();
 
         doAnswer(i -> {
-            connector1.receive(new Message(
+            connector1.receive(new ObjectMessage(
                     null,
                     new JoinMessage(100, new CommandNameFilter("test"), 0, false)).setSrc(channel2.address())
             );
@@ -296,7 +297,7 @@ class JGroupsConnectorTest {
         waitForConnectorSync();
 
         // secretly insert an illegal message
-        Message message = new Message(channel1.getAddress(),
+        Message message = new ObjectMessage(channel1.getAddress(),
                                       new JoinMessage(10, DenyAll.INSTANCE, 0, true));
         message.setSrc(new IpAddress(12345));
         channel1.getReceiver().receive(message);
